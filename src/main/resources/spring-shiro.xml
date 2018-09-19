@@ -86,6 +86,8 @@
 			/js/** = anon
 			/images/favicon.ico = anon
 			/images/** = anon
+			<!-- add 2018-8-19 -->
+			/**        = authc
 			</value>
 		</property>
 	</bean>
