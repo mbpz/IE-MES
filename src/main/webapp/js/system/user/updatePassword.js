@@ -43,7 +43,7 @@ $(function() {
 							var index = parent.layer.getFrameIndex(window.name); //先得到当前iframe层的索引
 							parent.layer.close(index); //再执行关闭
 							
-						/**	window.location.href='。./logout.shtml';**/
+							window.location.href='../logout.shtml';
 						});
 					} else {
 						layer.msg('修改密码失败！', {icon: 5});

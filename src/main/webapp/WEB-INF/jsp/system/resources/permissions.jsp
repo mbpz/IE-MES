@@ -142,42 +142,42 @@ function sub(){
     <th scope="row" abbr="L2 Cache" class="specalt"><span>二级菜单</span><span style="float: right;margin-right: 150px;">按扭</span></th>
   </tr>
   <c:forEach items="${permissions}" var="k">
-  <tr>
-    <th scope="row" abbr="L2 Cache" class="specalt">
-    <input type="checkbox" name="resId" id="menu" _key="menu_${k.id}" onclick="smenu(this,'${k.id}')" value="${k.id}">
-    ${k.name}
-    </th>
-    <th scope="row" abbr="L2 Cache" class="specalt">
-    <table id="mytable" cellspacing="0" summary="The technical specifications of the Apple PowerMac G5 series" style="width: 100%;height: 100%;">
-    <c:forEach items="${k.children}" var="kc">
-    <tr>
-    <th scope="row" abbr="L2 Cache" class="specalt">
-    <input type="checkbox"  name="resId" id="menu" _key="menu_1_${k.id}" _key_1="menu_1_1_${kc.id}" onclick="menu_1(this,'${kc.id}','${k.id}')"  value="${kc.id}">
-    ${kc.name}
-    </th>
-     <th>
-    <c:if test="${not empty kc.children}">
-   
-    <table id="mytable" cellspacing="0" summary="The technical specifications of the Apple PowerMac G5 series" style="width: 100%;height: 100%;">
-    <c:forEach items="${kc.children}" var="kcc">
-    <tr>
-    <th scope="row" abbr="L2 Cache" class="specalt">
-    <input type="checkbox"  name="resId" id="menu" _key="menu_1_1_${k.id}" _key_2="menu_1_1_${kc.id}" onclick="menu_1_1(this,'${kc.id}','${k.id}')" value="${kcc.id}">
-    ${kcc.name}
-    </th>
-     </tr>
-    </c:forEach>
-   
-    </table>
-    
-    </c:if>
-    </th>
-     </tr>
-    </c:forEach>
-   
-    </table>
-    </th>
-  </tr>
+	  <tr>
+	    <th scope="row" abbr="L2 Cache" class="specalt">
+	    <input type="checkbox" name="resId" id="menu" _key="menu_${k.id}" onclick="smenu(this,'${k.id}')" value="${k.id}">
+	    ${k.name}
+	    </th>
+	    <th scope="row" abbr="L2 Cache" class="specalt">
+	    <table id="mytable" cellspacing="0" summary="The technical specifications of the Apple PowerMac G5 series" style="width: 100%;height: 100%;">
+	    <c:forEach items="${k.children}" var="kc">
+	    <tr>
+	    <th scope="row" abbr="L2 Cache" class="specalt">
+	    <input type="checkbox"  name="resId" id="menu" _key="menu_1_${k.id}" _key_1="menu_1_1_${kc.id}" onclick="menu_1(this,'${kc.id}','${k.id}')"  value="${kc.id}">
+	    ${kc.name}
+	    </th>
+	     <th>
+	    <c:if test="${not empty kc.children}">
+	   
+	    <table id="mytable" cellspacing="0" summary="The technical specifications of the Apple PowerMac G5 series" style="width: 100%;height: 100%;">
+	    <c:forEach items="${kc.children}" var="kcc">
+	    <tr>
+	    <th scope="row" abbr="L2 Cache" class="specalt">
+	    <input type="checkbox"  name="resId" id="menu" _key="menu_1_1_${k.id}" _key_2="menu_1_1_${kc.id}" onclick="menu_1_1(this,'${kc.id}','${k.id}')" value="${kcc.id}">
+	    ${kcc.name}
+	    </th>
+	     </tr>
+	    </c:forEach>
+	   
+	    </table>
+	    
+	    </c:if>
+	    </th>
+	     </tr>
+	    </c:forEach>
+	   
+	    </table>
+	    </th>
+	  </tr>
 </c:forEach>
 </table>
 <br>
