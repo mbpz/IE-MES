@@ -8,10 +8,10 @@
 - [x] 检查初始工作区：git status --short 无输出。
 - [x] 确认 Maven WAR、Java 7 编译目标、Spring MVC/MyBatis/Shiro、MySQL。
 - [x] 确认本机 ARM64、Java 8、Maven 3.5.4、Docker CLI 与 Compose。
-- [ ] 清点每个 Controller、路由、页面、表、权限、任务及外部依赖。
+- [x] 静态清点 Controller、路由注解、JSP、数据库表、权限资源、任务及外部依赖，并记录 12 个缺失页面路由。
 - [ ] 核对 SQL 与实体和 Mapper 的表字段差异。
 - [x] 与 MyBatis 3.2.8 原始 sources.jar 对照全部 236 个内嵌文件，确认 Plugin.joinSql 等项目定制被调用。
-- [ ] 标注已确认功能、待验证功能与原有缺陷。
+- [x] 在 inventory.md 区分运行已验证、待验证与仓库原有页面缺口。
 
 ## 2. 最小运行验证
 - [x] 执行原始 Maven package；沙箱 DNS 失败，已获联网重试授权。
@@ -134,3 +134,7 @@
 - 2026-11-05 Excel 文件路径修复：原导入实现将上传原文件写到 Tomcat 工作目录且不清理；改为 `WorkbookFactory.create(BufferedInputStream)` 直接解析请求流，调用方在请求结束时关闭流。ARM64/Linux 容器中，中文文件名的用户空模板及主数据单行工作簿均 HTTP 200 JSON `result=true`；主数据工作中心新增 1 行，随后删除，Tomcat 工作目录无遗留 XLSX。含实际用户数据的导入、异常提示和所有文件类型仍待验收。
 
 - 2026-11-05 事务诊断：仅在运行容器临时放置受登录保护的诊断 JSP，读取 MVC 子容器中 `itemController`，确认其 AOP advisor 为 `org.springframework.transaction.interceptor.TransactionInterceptor`。另通过根容器 `transactionManager` 的 `TransactionTemplate` 写入临时 `ly_item` 后主动抛出 `IllegalStateException`，HTTP 输出 `forcedFailure=true;remainingRows=0`，证明本地 InnoDB/Spring 事务回滚基础链路有效。诊断 JSP 已删除，数据库无测试残留；这不证明每个控制器的业务异常分支都正确回滚。
+
+- 2026-11-05 静态与运行页面基线：40 个 Controller、306 处 RequestMapping 注解、120 个 JSP、12 个 Mapper XML、1 个 Scheduled、38 张初始化表、111 条权限资源。12 处固定 JSP 返回路径缺文件，管理员 GET 均 HTTP 404；`git rev-list --all --objects` 未发现对应历史 JSP。详见 inventory.md。
+
+- 2026-11-05 报表兼容性：`ReportController.getReportData` 的 9 个 reportMethod 中，首次 `getScheduleReportData`（即使用有效工单号 gd01）返回 500，日志为数据库用户对硬编码 `iemes.ly_shoporder_sfc` 的 SELECT 拒绝。`report-mapper.xml` 共 21 处 `iemes.ly_*` 前缀改为当前 JDBC 库内相对表名；Docker 重建后 9 种查询均 HTTP 200 / JSON result=true，调度报表返回 12 条。看板与教学交互仍需单独验收。

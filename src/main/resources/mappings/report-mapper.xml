@@ -35,7 +35,7 @@
 		from
 		(
 		select lss.shoporderId,finish_time,lss.sfc
-		from iemes.ly_shoporder_sfc lss
+		from ly_shoporder_sfc lss
 		where 1=1
 		and lss.site = #{site}
 		and lss.shoporderId = #{scheduler}
@@ -83,10 +83,10 @@
 		on sfcProData.finish_time >= timeRange.rangeStart <![CDATA[  AND sfcProData.finish_time < timeRange.rangeEnd  ]]> 
 		group by sfcProData.shoporderId,timeRange.rangeStart ,timeRange.rangeEnd
 		)proSfcNumByTimeRange
-		left join iemes.ly_shoporder ls
+		left join ly_shoporder ls
 		on proSfcNumByTimeRange.shoporderId = ls.shoporder_no
 		left join
-		(select shoporderId, count(sfc) as doneNum from iemes.ly_shoporder_sfc
+		(select shoporderId, count(sfc) as doneNum from ly_shoporder_sfc
 		where 1=1
 		and site = #{site}
 		and shoporderId = #{scheduler}
@@ -99,7 +99,7 @@
 	      shoporderId,
 	      COUNT(sfc) AS scrapNumber
 	    FROM
-	      iemes.ly_shoporder_sfc
+	      ly_shoporder_sfc
 	    WHERE 1 = 1
 	      AND site = #{site}
 	       AND shoporderId = #{scheduler}
@@ -498,9 +498,9 @@
 		sfcStatus,ls.shoporder_item,ls.process_route,ls.status AS
 		shopOrderStatus,
 		ls.workcenter,ls.workline,ls.create_time,ls.site,ls.by_user
-		FROM iemes.ly_shoporder ls
+		FROM ly_shoporder ls
 		LEFT JOIN
-		iemes.ly_shoporder_sfc lss
+		ly_shoporder_sfc lss
 		ON ls.shoporder_no = lss.shoporderId
 		WHERE 1=1
 		and ls.site = #{site}
@@ -522,8 +522,8 @@
 		<if test="batch != null and batch != ''">
 			AND lss.sfc IN
 			(
-			SELECT DISTINCT(lsa.sfc) FROM iemes.ly_sfc_assembly lsa
-			LEFT JOIN iemes.ly_workshop_inventory lwi ON lsa.item_sfc = lwi.item_sfc
+			SELECT DISTINCT(lsa.sfc) FROM ly_sfc_assembly lsa
+			LEFT JOIN ly_workshop_inventory lwi ON lsa.item_sfc = lwi.item_sfc
 			WHERE lsa.batch like CONCAT('%', #{batch}, '%')
 			)
 		</if>
@@ -542,19 +542,19 @@
 		lsStep.status as
 		stepStatus,lsStep.byUser,lsStep.createTime,lsStep.site
 		FROM
-		iemes.ly_sfc_step lsStep
+		ly_sfc_step lsStep
 		LEFT JOIN
-		iemes.ly_operation lo
+		ly_operation lo
 		ON
 		lsStep.operation = lo.operation_no
 		LEFT JOIN
-		iemes.ly_operation_resource lor
+		ly_operation_resource lor
 		ON lsStep.operation = lor.operation
 		LEFT JOIN
-		iemes.ly_shoporder_sfc lss
+		ly_shoporder_sfc lss
 		ON lsStep.sfc = lss.sfc
 		LEFT JOIN
-		iemes.ly_shoporder ls
+		ly_shoporder ls
 		ON lss.shoporderId = ls.shoporder_no
 		WHERE 1=1
 		AND lss.sfc = #{sfc} 
@@ -586,12 +586,12 @@
 		SELECT
 		DISTINCT
 		lsa.item,li.item_name,li.item_desc,li.item_type,lwi.create_time,lwi.by_user,lsa.item_sfc,lwi.batch
-		FROM iemes.ly_sfc_assembly lsa
+		FROM ly_sfc_assembly lsa
 		LEFT JOIN
-		iemes.ly_item li
+		ly_item li
 		ON lsa.item = li.item_no
 		LEFT JOIN
-		iemes.ly_workshop_inventory lwi
+		ly_workshop_inventory lwi
 		ON lsa.item_sfc = lwi.item_sfc
 		WHERE 1=1
 		<if test="operation !=null and operation!=''">
@@ -610,18 +610,18 @@
 		SELECT
 		lsn.sfc,lo.operation_description,lor.operationResource_no,lsn.resource,lsn.nc_code,lnc.nc_code_desc,lsn.nc_code_group,
 		lsn.status,lnr.repair_desc,lnr.create_time as handleTime
-		FROM iemes.ly_sfc_nc lsn
+		FROM ly_sfc_nc lsn
 		left join
-		iemes.ly_nc_repair lnr
+		ly_nc_repair lnr
 		on lsn.repair_id = lnr.id
 		LEFT JOIN
-		iemes.ly_operation_resource lor
+		ly_operation_resource lor
 		ON lsn.operation = lor.operation
 		LEFT JOIN
-		iemes.ly_operation lo
+		ly_operation lo
 		ON lsn.operation = lo.operation_no
 		LEFT JOIN
-		iemes.ly_nc_code lnc
+		ly_nc_code lnc
 		ON lsn.nc_code = lnc.nc_code
 		WHERE 1=1
 		<if test="operation !=null and operation!=''">

@@ -33,3 +33,7 @@
 ## 2026-11-05 当前结构复核
 
 原 SQL 35 张表加补充 SQL 3 张表，共 38 张；`@TableSeg` 标注表名 38 个。仅 `RoleResFormMap` 标注的 `ly_role_res` 不在初始化脚本中；`ly_resource_type` 有表但无对应标注实体。`resources-mapper.xml` 中 `deleteResourcesRole` 与 `addRoleRes` 两条语句指向不存在的 `ly_res_roles`，全仓库未找到 Java 调用点，先按休眠代码记录。`ly_table` 是动态 CRUD 元数据键而非实体表，`ly_userinfo` 出现在分页插件的示例字符串。暂不据此生成推测性的表。
+
+## 报表旧库名前缀
+
+`report-mapper.xml` 原有 21 处 `iemes.ly_*` 固定库名前缀，与当前初始化库 `iemes_v1` 不一致，曾使调度报表返回 500（SELECT 权限错误）。已改为不带库名的表引用，九种公共报表查询在当前 Docker 库中均返回成功 JSON。
