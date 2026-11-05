@@ -93,33 +93,42 @@ public class NcHandleController extends BaseController {
 	@ResponseBody
 	@RequestMapping("addNcHandleMsg")
 	public String addNcHandleMsg(String sfc,String radio,String remarks,String operation, Model model){
-		Session session = SecurityUtils.getSubject().getSession();
-		Map<String,Object> map = new HashMap<String,Object>();
-		String site = session.getAttribute("site").toString();
-		map.put("sfc", sfc);
-		map.put("site", site);
-		
-		List<Map<String, Object>> data = baseExtMapper.findNCRepairBySFC(map);
-		
-		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
-		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
-		
-		NcRepairFormMap ncRepairFormMap = new NcRepairFormMap();
-		ncRepairFormMap.put("byUser", userFormMap.getStr("accountName"));
-		ncRepairFormMap.put("createDate", new Timestamp(System.currentTimeMillis()));
-		ncRepairFormMap.put("site", site);
-		ncRepairFormMap.put("sfc", sfc);
-		ncRepairFormMap.put("repair_desc", remarks);
-		ncRepairFormMap.put("workcenter", data.get(0).get("workcenter"));
-		ncRepairFormMap.put("workcenter_child", data.get(0).get("workcenter_child"));
-		ncRepairFormMap.put("operation", data.get(0).get("operation"));
-		ncRepairFormMap.put("operation2", operation);
-		ncRepairFormMap.put("shoporder", data.get(0).get("shoporder"));
-		ncRepairFormMap.put("nc_code", data.get(0).get("nc_code"));
-		ncRepairFormMap.put("nc_code_group", data.get(0).get("nc_code_group"));
 		try {
+			if (sfc == null || sfc.trim().isEmpty()) {
+				return ResponseHelp.responseErrorText("请输入SFC");
+			}
+			if (!"repair".equals(radio) && !"scrap".equals(radio)) {
+				return ResponseHelp.responseErrorText("请选择维修或报废");
+			}
+			if ("repair".equals(radio) && (operation == null || operation.trim().isEmpty())) {
+				return ResponseHelp.responseErrorText("请选择维修后的操作");
+			}
+			Session session = SecurityUtils.getSubject().getSession();
+			String site = session.getAttribute("site").toString();
+			Map<String,Object> map = new HashMap<String,Object>();
+			map.put("sfc", sfc);
+			map.put("site", site);
+			List<Map<String, Object>> data = baseExtMapper.findNCRepairBySFC(map);
+			if (data == null || data.isEmpty()) {
+				return ResponseHelp.responseErrorText("未找到该SFC的不良处置信息");
+			}
+			HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();
+			UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
+			NcRepairFormMap ncRepairFormMap = new NcRepairFormMap();
+			ncRepairFormMap.put("byUser", userFormMap.getStr("accountName"));
+			ncRepairFormMap.put("createDate", new Timestamp(System.currentTimeMillis()));
+			ncRepairFormMap.put("site", site);
+			ncRepairFormMap.put("sfc", sfc);
+			ncRepairFormMap.put("repair_desc", remarks);
+			ncRepairFormMap.put("workcenter", data.get(0).get("workcenter"));
+			ncRepairFormMap.put("workcenter_child", data.get(0).get("workcenter_child"));
+			ncRepairFormMap.put("operation", data.get(0).get("operation"));
+			ncRepairFormMap.put("operation2", operation);
+			ncRepairFormMap.put("shoporder", data.get(0).get("shoporder"));
+			ncRepairFormMap.put("nc_code", data.get(0).get("nc_code"));
+			ncRepairFormMap.put("nc_code_group", data.get(0).get("nc_code_group"));
 			//维修
-			if(radio.equals("repair")){
+			if("repair".equals(radio)){
 				return ncHandleService.NcHandleRepair(ncRepairFormMap);
 			}
 			else{ //报废

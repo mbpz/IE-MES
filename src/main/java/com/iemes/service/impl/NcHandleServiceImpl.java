@@ -28,7 +28,7 @@ public class NcHandleServiceImpl implements NcHandleService {
 	/**
 	 * 不合格处置——报废
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public String NcHandleScrap(NcRepairFormMap ncRepairFormMap) throws Exception {
 		String sfc = ncRepairFormMap.getStr("sfc");
 		String operation = ncRepairFormMap.getStr("operation");
@@ -90,9 +90,9 @@ public class NcHandleServiceImpl implements NcHandleService {
 		baseMapper.editEntity(sfcNcFormMap);
 		
 		ShopOrderSfcFormMap shopOrderSfcFormMap = new ShopOrderSfcFormMap();
-		shopOrderSfcFormMap.put("where ", " where site = '"+ShiroSecurityHelper.getSite()+"'" + 
-				" and shoporderId = '"+shoporder + "'");
-		List<ShopOrderSfcFormMap> shopOrderSfcFormMapList = baseMapper.findByWhere(shopOrderSfcFormMap);
+		shopOrderSfcFormMap.put("site", site);
+		shopOrderSfcFormMap.put("shoporderId", shoporder);
+		List<ShopOrderSfcFormMap> shopOrderSfcFormMapList = baseMapper.findByNames(shopOrderSfcFormMap);
 		if (!ListUtils.isNotNull(shopOrderSfcFormMapList)) {
 			throw new Exception("未找到工单["+shoporder+"]的详细信息");
 		}
@@ -103,8 +103,7 @@ public class NcHandleServiceImpl implements NcHandleService {
 			int status = formMap.getInt("status");
 			if (sfc.equals(formSfc)) {
 				shopOrderSfcFormMap = formMap;
-			}
-			if (status!=2 || status!=3) {
+			} else if (status!=2 && status!=3) {
 				over = false;
 			}
 		}
@@ -116,9 +115,9 @@ public class NcHandleServiceImpl implements NcHandleService {
 		
 		if (over) {
 			ShopOrderFormMap shopOrderFormMap = new ShopOrderFormMap();
-			shopOrderFormMap.put("where ", " where site = '"+ShiroSecurityHelper.getSite()+"'" + 
-					" and shoporder_no = '"+shoporder + "'");
-			List<ShopOrderFormMap> shopOrderFormMapList = baseMapper.findByWhere(shopOrderFormMap);
+			shopOrderFormMap.put("site", site);
+			shopOrderFormMap.put("shoporder_no", shoporder);
+			List<ShopOrderFormMap> shopOrderFormMapList = baseMapper.findByNames(shopOrderFormMap);
 			if (!ListUtils.isNotNull(shopOrderFormMapList)) {
 				throw new Exception("未找到工单["+shoporder+"]的详细信息");
 			}
@@ -133,7 +132,7 @@ public class NcHandleServiceImpl implements NcHandleService {
 	 * 不合格品处置——维修
 	 * 
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public String NcHandleRepair(NcRepairFormMap ncRepairFormMap) throws Exception {
 		String sfc = ncRepairFormMap.getStr("sfc");
 		String operation = ncRepairFormMap.getStr("operation");
@@ -174,7 +173,7 @@ public class NcHandleServiceImpl implements NcHandleService {
 		SfcNcFormMap sfcNcFormMap = new SfcNcFormMap();
 		sfcNcFormMap.put("sfc", sfc);
 		sfcNcFormMap.put("shoporder", shoporder);
-		sfcNcFormMap.put(site, ShiroSecurityHelper.getSite());
+		sfcNcFormMap.put("site", site);
 		sfcNcFormMap.put("nc_code", nc_code);
 		sfcNcFormMap.put("status", 0);
 		
@@ -184,7 +183,7 @@ public class NcHandleServiceImpl implements NcHandleService {
 		}
 		sfcNcFormMap = sfcNcFormMaplist.get(0);
 		sfcNcFormMap.put("status", 1);
-		sfcNcFormMap.put("repair_type", 1);
+		sfcNcFormMap.put("repair_type", 0);
 		sfcNcFormMap.put("repair_id", ncRepairFormMap.get("id"));
 		baseMapper.editEntity(sfcNcFormMap);
 		
