@@ -115,3 +115,5 @@
 
 - 2026-11-05 文件持久化验证：管理员 HTTP 下载 userInfo.xlsx 9348 字节、masterData.xlsx 17021 字节，与仓库原文件 SHA-256 一致；两个不同一次性应用容器中上传卷和配置卷的标记保持一致，测试标记已删除。
 - 2026-11-05 本地邮件告警：Compose 增加 Mailpit（本机 18025），应用 SMTP 主机/端口由环境传入，原 smtp.163.com 为非容器环境默认值。初始容器配置使用 example.test 虚拟邮箱。当前既有配置卷已设置为虚拟邮箱。暂将 cpu/jvm/ram 阈值设为 0，等待 SpringTaskController 每分钟运行，Mailpit API 从 0 变 1，邮件主题含“预警”，ly_server_info 从 0 变 1；阈值恢复原值 100/100/100。由于 Docker Hub 临时超时，本机 .env 的 IEMES_MAILPIT_IMAGE 指向可达镜像代理；项目默认仍为官方镜像名。
+
+- 2026-11-05 IDEA 调试链路：调试 Compose 配置解析成功，临时启动 app/debug 并获得健康状态；`127.0.0.1:5005` 返回完整 `JDWP-Handshake`。恢复普通 Compose 后 5005 关闭，登录页 HTTP 200；IDEA GUI 内实际导入/附加仍待验证。
