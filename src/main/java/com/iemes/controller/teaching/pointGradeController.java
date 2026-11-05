@@ -99,6 +99,7 @@ public class pointGradeController extends BaseController {
 
 	@ResponseBody
 	@RequestMapping("point_grade_update_all")
+	@Transactional(readOnly=false)
 	@SystemLog(module="数据维护",methods="修改参数")//凡需要处理业务逻辑的.都需要记录操作日志
 	public BaseResponse pointGradeUpdate() throws Exception {
 		BaseResponse response = new BaseResponse();
@@ -143,17 +144,16 @@ public class pointGradeController extends BaseController {
 			List<PointGradeFormMap> PointGradeFormList = baseMapper.findByNames(pointGrade);
 			
 			//3、删除评分信息
-			String ids = "";
-			for (int i=0;i<PointGradeFormList.size();i++) {
-				PointGradeFormMap PointGradeForm =  PointGradeFormList.get(i);
-				ids = ids + PointGradeForm.get("id");
-				if (i!=jsonArr.size()-1) {
-					ids = ids + ",";
-				}
+			StringBuilder ids = new StringBuilder();
+			for (PointGradeFormMap existing : PointGradeFormList) {
+				if (ids.length() > 0) ids.append(",");
+				ids.append(existing.get("id"));
 			}
-			PointGradeFormMap pointGradeForm = new PointGradeFormMap();
-			pointGradeForm.put("id", ids);
-			baseMapper.deleteByNames(pointGradeForm);
+			if (ids.length() > 0) {
+				PointGradeFormMap pointGradeForm = new PointGradeFormMap();
+				pointGradeForm.put("id", ids.toString());
+				baseMapper.deleteByNames(pointGradeForm);
+			}
 			
 //			
 //			
@@ -189,7 +189,7 @@ public class pointGradeController extends BaseController {
 			pointGradeFormMap.set("exam_no",exam_no);
 			list.add(pointGradeFormMap);
 		}
-		baseMapper.batchSave(list);
+		if (!list.isEmpty()) baseMapper.batchSave(list);
 		
 		//添加考试信息
 		examInfoFormMap.clear();

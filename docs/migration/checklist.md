@@ -139,4 +139,6 @@
 
 - 2026-11-05 报表兼容性：`ReportController.getReportData` 的 9 个 reportMethod 中，首次 `getScheduleReportData`（即使用有效工单号 gd01）返回 500，日志为数据库用户对硬编码 `iemes.ly_shoporder_sfc` 的 SELECT 拒绝。`report-mapper.xml` 共 21 处 `iemes.ly_*` 前缀改为当前 JDBC 库内相对表名；Docker 重建后 9 种查询均 HTTP 200 / JSON result=true，调度报表返回 12 条。看板与教学交互仍需单独验收。
 
-- 2026-11-05 教学评分与通用表格查询：页面脚本里 28 个无附加 URL 参数的 `jsonUrl` 接口首次 27 个正常、`/point_grade/point_grade_findByPage.shtml` HTTP 500。日志显示 MySQL 8 把动态 SELECT 中未转义的 `function` 列当作关键字。检查当前库 294 个列名均为简单标识符；`ConfigUtils` 缓存 SELECT 字段清单时逐列加反引号。Docker 重建后教学评分列表 HTTP 200 / JSON 5 条，28 个表格接口全部 HTTP 200 / 可解析 JSON。教学评分的修改与考试流程仍待验收。
+- 2026-11-05 教学评分与通用表格查询：页面脚本里 28 个无附加 URL 参数的 `jsonUrl` 接口首次 27 个正常、`/point_grade/point_grade_findByPage.shtml` HTTP 500。日志显示 MySQL 8 把动态 SELECT 中未转义的 `function` 列当作关键字。检查当前库 294 个列名均为简单标识符。最初在 `ConfigUtils` 缓存中加反引号虽使 SELECT 通过，却让动态 WHERE 的字段匹配失效；已改为保留原始缓存字段，只在 `Plugin.joinSql` 输出 SELECT 字段时加引号。教学列表筛选由错误的 33 条恢复为与 SQL 一致的 11 条，28 个表格接口全部 HTTP 200 / 可解析 JSON。
+
+- 2026-11-05 评分写入修复：因字段缓存被加引号造成动态筛选失效，首次测试临时考试时误删原始考试 ID 45；立即从已验证备份的 `ly_exam` INSERT 恢复，原评分 33 行未变化，后续反复核对 ID 45 存在。随后修复 `Plugin.joinSql` 在 BATCHSAVE 生成 SQL 时对 `function` 关键字列加反引号；临时考试新增 1 考试/1 评分成功。替换旧评分原来用新 JSON 项目数判断旧 ID 分隔符，导致 SQL 语法错误并删除考试；现在按旧列表自身拼接 ID，给整个保存方法加 `@Transactional`，空评分列表跳过批量 INSERT。临时考试实测新增 1/1、替换 1/2、提交带单引号的无效评分值触发 HTTP 500 后原有 1/2 及评分 ID 不变、清空评分得到 1/0，最后彻底清理临时数据。带单引号的用户值仍被旧 SQL 拼接拒绝，需后续参数化修复，不能称为所有输入均通过。

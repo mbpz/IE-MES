@@ -49,8 +49,7 @@ public class ConfigUtils {
 			 List<HashMap<String, Object>> lh = baseMapper.initTableField(tm);
 			 for (HashMap<String, Object> hashMap : lh) {
 				 Map<String, Object> m = new HashMap<String, Object>();
-					String columns = hashMap.get("COLUMN_NAME").toString();
-					m.put("field", "`" + columns.replace(",", "`,`") + "`");
+					m.put("field", hashMap.get("COLUMN_NAME"));
 					String ble =hashMap.get("TABLE_NAME").toString();//表名
 					m.put("column_key", map.get(ble));//获取表的主键
 					EhcacheUtils.put(ble, m);//某表对应的主键和字段放到缓存

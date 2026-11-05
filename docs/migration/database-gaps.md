@@ -40,4 +40,4 @@
 
 ## MySQL 8 关键字列
 
-`ly_teaching_testinfo.function` 在原 MyBatis 动态 SELECT 字段清单中未加引号，导致教学评分列表 HTTP 500。已在 `ConfigUtils` 对从 `information_schema.columns` 获取的简单列名逐一加反引号；当前 294 个列名符合简单标识符形式，修复后 28 个表格数据接口均返回成功 JSON。写入路径仍待独立业务验证。
+`ly_teaching_testinfo.function` 在原 MyBatis 动态 SELECT 字段清单中未加引号，导致教学评分列表 HTTP 500。最终修复保留 `ConfigUtils` 缓存中的原始列名供动态筛选匹配，仅在 `Plugin.joinSql` 输出 SELECT 字段与 BATCHSAVE 的 INSERT 字段时加反引号。当前 294 个列名符合简单标识符形式，修复后教学列表筛选结果与数据库一致，28 个表格数据接口返回成功 JSON；评分新增、替换与清空已在临时考试中验证。

@@ -139,7 +139,7 @@ public class Plugin implements InvocationHandler {
 			table = formMap.get("ly_table");
 			mapfield = (Map<String, Object>) EhcacheUtils.get(table);
 			field = mapfield.get("field").toString();
-			sql = " select " + field + " from " + String.valueOf(table);
+			sql = " select `" + field.replace(",", "`,`") + "` from " + String.valueOf(table);
 		}
 		String sqlId = mappedStatement.getId();
 		sqlId = sqlId.substring(sqlId.lastIndexOf(".") + 1);
@@ -320,7 +320,7 @@ public class Plugin implements InvocationHandler {
 				for (String string : fe) {
 					Object v = froMmap.get(string);
 					if (null != v) {
-						fieldString += string + ",";
+						fieldString += "`" + string + "`,";
 						fieldValues += "'" + v + "',";
 					}
 				}
