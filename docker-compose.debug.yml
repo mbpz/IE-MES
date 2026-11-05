@@ -1,0 +1,8 @@
+services:
+  app:
+    environment:
+      JPDA_ADDRESS: "5005"
+      JPDA_TRANSPORT: dt_socket
+    ports:
+      - "127.0.0.1:5005:5005"
+    command: [catalina.sh, jpda, run]

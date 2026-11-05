@@ -42,7 +42,7 @@ import com.iemes.mapper.site.SiteMapper;
 import com.iemes.util.Common;
 import com.iemes.util.TreeObject;
 import com.iemes.util.TreeUtil;
-import com.mysql.jdbc.Connection;
+import java.sql.Connection;
 
 /**
  * 进行管理后台框架界面的类
@@ -201,9 +201,8 @@ public class BackgroundController extends BaseController {
 		java.io.BufferedInputStream bis = null;
 		java.io.BufferedOutputStream bos = null;
 
-		String ctxPath = request.getSession().getServletContext().getRealPath("/") + "\\"
-				+ "filezip\\";
-		String downLoadPath = ctxPath + fileName;
+		File downloadDirectory = new File(request.getSession().getServletContext().getRealPath("/"), "filezip");
+		String downLoadPath = new File(downloadDirectory, fileName).getPath();
 		System.out.println(downLoadPath);
 		try {
 			long fileLength = new File(downLoadPath).length();

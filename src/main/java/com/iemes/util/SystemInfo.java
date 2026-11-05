@@ -16,6 +16,27 @@ import org.hyperic.sigar.Swap;
 import com.iemes.entity.ServerInfoFormMap;
 
 public class SystemInfo {
+    /** Metrics exposed by this JVM's operating-system view (container-aware where supported). */
+    public static ServerInfoFormMap usage() {
+        java.lang.management.OperatingSystemMXBean platform = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+        if (!(platform instanceof com.sun.management.OperatingSystemMXBean)) {
+            throw new IllegalStateException("Operating system metrics are not supported by this JVM");
+        }
+        com.sun.management.OperatingSystemMXBean os = (com.sun.management.OperatingSystemMXBean) platform;
+        double cpu = os.getSystemCpuLoad();
+        long total = os.getTotalPhysicalMemorySize();
+        long free = os.getFreePhysicalMemorySize();
+        if (cpu < 0 || Double.isNaN(cpu) || total <= 0 || free < 0) {
+            throw new IllegalStateException("Operating system metrics are temporarily unavailable");
+        }
+        Runtime runtime = Runtime.getRuntime();
+        ServerInfoFormMap metrics = new ServerInfoFormMap();
+        metrics.put("cpuUsage", Math.round(cpu * 100));
+        metrics.put("ramUsage", Math.round((total - free) * 100.0 / total));
+        metrics.put("jvmUsage", Math.round((runtime.totalMemory() - runtime.freeMemory()) * 100.0 / runtime.totalMemory()));
+        return metrics;
+    }
+
 	public static ServerInfoFormMap SystemProperty() {
 		ServerInfoFormMap monitorMap = new ServerInfoFormMap();
 		Runtime r = Runtime.getRuntime();

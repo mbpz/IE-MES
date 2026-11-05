@@ -217,7 +217,7 @@ public class MessageUploadController extends BaseController {
 		// 设置响应头，控制浏览器下载该文件
 		response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
 		// 读取要下载的文件，保存到文件输入流
-		File file = new File(fileSaveRootPath + "\\" + fileName);
+		File file = new File(fileSaveRootPath, fileName);
 		FileInputStream in = new FileInputStream(file);
 		// 创建输出流
 		OutputStream out = response.getOutputStream();
@@ -257,7 +257,7 @@ public class MessageUploadController extends BaseController {
 		// 设置响应头，控制浏览器下载该文件
 		response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
 		// 读取要下载的文件，保存到文件输入流
-		File file = new File(fileSaveRootPath + "\\" + fileName);
+		File file = new File(fileSaveRootPath, fileName);
 		FileInputStream in = new FileInputStream(file);
 		// 创建输出流
 		OutputStream out = response.getOutputStream();

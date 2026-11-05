@@ -1,5 +1,6 @@
  package com.iemes.util;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.Reader;
 import java.util.Iterator;
@@ -64,7 +65,14 @@ public class PropertiesUtils {
 	public static Properties getProperties(){
 		Properties prop = new Properties();
 		try {
-			Reader reader = Resources.getResourceAsReader("/config.properties");
+			String externalPath = System.getProperty("iemes.config.file");
+			if (externalPath != null && !externalPath.isEmpty()) {
+				try (InputStream input = new FileInputStream(externalPath)) {
+					prop.load(input);
+				}
+				return prop;
+			}
+			Reader reader = Resources.getResourceAsReader("config.properties");
 			prop.load(reader);
 			reader.close();
 		} catch (Exception e) {
@@ -76,7 +84,7 @@ public class PropertiesUtils {
 	public static Properties getjdbcProperties(){
 		Properties prop = new Properties();
 		try {
-			Reader reader = Resources.getResourceAsReader("/jdbc.properties");
+			Reader reader = Resources.getResourceAsReader("jdbc.properties");
 			prop.load(reader);
 			reader.close();
 		} catch (Exception e) {
@@ -97,11 +105,14 @@ public class PropertiesUtils {
 			// 从输入流中读取属性列表（键和元素对）
 			Properties prop = getProperties();
 			prop.setProperty(key, value);
-			String path = PropertiesUtils.class.getResource("/config.properties").getPath();
+			String path = System.getProperty("iemes.config.file");
+			if (path == null || path.isEmpty()) {
+				path = PropertiesUtils.class.getResource("/config.properties").getPath();
+			}
 			FileOutputStream outputFile = new FileOutputStream(path);
 			prop.store(outputFile, "modify");
-			outputFile.close();
 			outputFile.flush();
+			outputFile.close();
 		} catch (Exception e) {
 		}
 	}

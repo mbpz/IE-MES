@@ -4,7 +4,6 @@ import java.util.Properties;
 
 import javax.inject.Inject;
 
-import org.hyperic.sigar.Sigar;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -46,7 +45,7 @@ public class SpringTaskController {
 	 */
 	@Scheduled(cron = "1 * *  * * ? ")
 	public void task() throws Exception {
-		ServerInfoFormMap usage = SystemInfo.usage(new Sigar());
+		ServerInfoFormMap usage = SystemInfo.usage();
 		String cpuUsage = usage.get("cpuUsage")+"";// CPU使用率
 		String serverUsage = usage.get("ramUsage")+"";// 系统内存使用率
 		String JvmUsage = usage.get("jvmUsage")+"";// 计算ＪＶＭ内存使用率
