@@ -20,3 +20,5 @@ docker compose up -d --build --wait
 ## IntelliJ IDEA
 
 通过根目录 `pom.xml` 导入 Maven 项目，Project SDK 和 Maven Runner 选择 JDK 8；在 IDEA 的 Maven 设置中将 User settings file 指向 `docker/maven-settings.xml`，使用阿里云镜像。原 Eclipse 配置保留。
+
+本地告警邮件收件箱：`http://127.0.0.1:18025`。

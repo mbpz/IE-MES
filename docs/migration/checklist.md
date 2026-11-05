@@ -21,14 +21,14 @@
 - [ ] 应用启动、登录和代表性读写流程通过。
 
 ## 3. 兼容性修复
-- [ ] 固定构建插件、依赖仓库及经过验证的运行版本。
+- [x] 固定构建插件、阿里云仓库和经验证的 JDK 8 / Maven 3.5.4、3.9.9 / Tomcat 9 / MySQL 8.0.44 版本。
 - [ ] 修复 Linux 文件路径、文件名与编码兼容性。
-- [ ] 保留监控功能并验证 ARM64/Linux 运行方案。
-- [ ] 配置与邮件环境可注入、本地邮件捕获可验证。
+- [x] ARM64/Linux 下监控指标由 JDK 接口采集，定时告警和数据库记录已实测。
+- [x] 持久化配置与 SMTP 主机、端口可注入；本地 Mailpit 捕获预警邮件。
 - [ ] 核对事务生效与失败回滚。
 
 ## 4. Docker / IDEA 交付
-- [ ] Dockerfile、Compose、数据库初始化、健康检查。
+- [x] Dockerfile、Compose、38 张表初始化、应用和数据库健康检查。
 - [ ] 数据库、上传文件及可变配置持久化。
 - [ ] 本机端口、启动、停止、备份恢复、调试文档。
 - [ ] IDEA 通过 pom.xml 导入与调试配置。
@@ -40,7 +40,7 @@
 - [ ] 计划、订单、生产各工位、库存、质量返修。
 - [ ] 看板、报表、教学评分。
 - [ ] 上传下载、导入导出、中文文件名。
-- [ ] 监控、定时任务、邮件告警。
+- [x] 监控、每分钟定时任务、Mailpit 邮件与 ly_server_info 告警记录已端到端验证。
 - [ ] 重建后数据/文件/配置保持，备份恢复验证。
 - [ ] 记录所有失败、未验证项，完成最终差异审查。
 
@@ -112,3 +112,6 @@
 - 鉴权抽查：匿名 `/index.shtml` 跳转登录；管理员登录后首页、物料、计划、看板页面均 HTTP 200。完整业务写入与权限矩阵仍待验收。
 
 - 2026-11-05 看板回归：无头 Chrome 在修复前捕获 `app.v1.js` 注入 `http://www.lanyuanoss.com/lanyuan.shtml`，并确认 `layui/css/modules/layer/skin/style.css` 由 `common.jspf` 的 `layer.config` 发起；图钉菜单计算样式为白底白字。移除旧外部脚本和无效皮肤配置，菜单设深色文字；重新构建并重建 Docker 应用后，Chrome 网络/日志中无上述请求，弹层变为白底 `rgb(34,34,34)` 文字。`node --check`、Docker Maven 构建和 `git diff --check` 通过，app/db 均 healthy。
+
+- 2026-11-05 文件持久化验证：管理员 HTTP 下载 userInfo.xlsx 9348 字节、masterData.xlsx 17021 字节，与仓库原文件 SHA-256 一致；两个不同一次性应用容器中上传卷和配置卷的标记保持一致，测试标记已删除。
+- 2026-11-05 本地邮件告警：Compose 增加 Mailpit（本机 18025），应用 SMTP 主机/端口由环境传入，原 smtp.163.com 为非容器环境默认值。初始容器配置使用 example.test 虚拟邮箱。当前既有配置卷已设置为虚拟邮箱。暂将 cpu/jvm/ram 阈值设为 0，等待 SpringTaskController 每分钟运行，Mailpit API 从 0 变 1，邮件主题含“预警”，ly_server_info 从 0 变 1；阈值恢复原值 100/100/100。由于 Docker Hub 临时超时，本机 .env 的 IEMES_MAILPIT_IMAGE 指向可达镜像代理；项目默认仍为官方镜像名。

@@ -44,11 +44,16 @@ public class EmailUtils {
 		
 		Properties properties = new Properties();// 创建Properties对象
 		properties.setProperty("mail.transport.protocol", "smtp");// 设置传输协议
-		properties.put("mail.smtp.host", "smtp.163.com");// 设置发信邮箱的smtp地址
-		properties.setProperty("mail.smtp.auth", "true"); // 验证
-		Authenticator auth = new AjavaAuthenticator(emailName,
-				emailPassword); // 使用验证，创建一个Authenticator
-		Session session = Session.getDefaultInstance(properties, auth);// 根据Properties，Authenticator创建Session
+		String smtpHost = System.getenv("IEMES_SMTP_HOST");
+		String smtpPort = System.getenv("IEMES_SMTP_PORT");
+		properties.put("mail.smtp.host", smtpHost == null || smtpHost.isEmpty() ? "smtp.163.com" : smtpHost);
+		properties.put("mail.smtp.port", smtpPort == null || smtpPort.isEmpty() ? "25" : smtpPort);
+		boolean authenticated = emailName != null && !emailName.isEmpty();
+		properties.setProperty("mail.smtp.auth", Boolean.toString(authenticated));
+		properties.setProperty("mail.smtp.connectiontimeout", "5000");
+		properties.setProperty("mail.smtp.timeout", "5000");
+		Authenticator auth = authenticated ? new AjavaAuthenticator(emailName, emailPassword) : null;
+		Session session = Session.getInstance(properties, auth);
 		Message message = new MimeMessage(session);// Message存储发送的电子邮件信息
 		message.setFrom(new InternetAddress(fromEmail));
 		message.setRecipient(Message.RecipientType.TO, new InternetAddress(

@@ -58,3 +58,9 @@ docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d --build
 IDEA 新建 Remote JVM Debug，Attach 模式，主机 localhost，端口 5005，选择本项目模块。调试端口只映射本机。普通启动不开放调试端口。
 
 本机初始化管理员用户名和密码见 `src/main/webapp/dbscript/iemes_v1.sql` 的 `-- Local development admin login` 注释；当前本地数据库密码也保存在被 Git 忽略的 `.env` 中。
+
+## 本地告警邮件
+
+Compose 启动 Mailpit，收件箱在 `http://127.0.0.1:18025`。应用通过内部 SMTP 服务 `mailpit:1025` 发信，使用 `example.test` 虚拟收发地址，不向真实邮箱发送。首次初始化配置卷时自动写入虚拟地址；已存在的配置卷保留已有值。SMTP 主机、端口通过 `IEMES_SMTP_HOST`、`IEMES_SMTP_PORT` 注入，非容器环境默认 `smtp.163.com:25`。本机 `.env` 可以用 `IEMES_MAILPIT_IMAGE` 覆盖 Mailpit 镜像来源；默认 `axllent/mailpit:v1.32.0`。
+
+2026-11-05 在 ARM64 Docker 中临时将 CPU、JVM、内存告警阈值设为 0，定时任务发送 1 封邮件并写入 1 条 `ly_server_info`，随后恢复原阈值 100/100/100。

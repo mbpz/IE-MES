@@ -32,8 +32,8 @@ public final class ContainerSupport {
         if (!Files.exists(saved)) {
             Properties initial = read(config);
             // Do not send local development alerts to historical recipients.
-            initial.setProperty("fromEmail", "");
-            initial.setProperty("toEmail", "");
+            initial.setProperty("fromEmail", "iemes@example.test");
+            initial.setProperty("toEmail", "operator@example.test");
             initial.setProperty("emailName", "");
             initial.setProperty("emailPassword", "");
             write(saved, initial);

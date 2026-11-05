@@ -30,6 +30,8 @@ services:
       dockerfile: Dockerfile
     environment:
       IEMES_DB_PASSWORD: ${IEMES_DB_PASSWORD:?Set IEMES_DB_PASSWORD in .env}
+      IEMES_SMTP_HOST: mailpit
+      IEMES_SMTP_PORT: "1025"
       TZ: Asia/Shanghai
       JAVA_OPTS: -Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai -Diemes.config.file=/var/lib/iemes/config.properties -Xms256m -Xmx1024m
     ports:
@@ -40,6 +42,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: [CMD, java, -cp, /opt/iemes, ContainerSupport, health]
       interval: 15s
@@ -47,7 +51,17 @@ services:
       retries: 20
       start_period: 60s
     restart: unless-stopped
+  mailpit:
+    image: ${IEMES_MAILPIT_IMAGE:-axllent/mailpit:v1.32.0}
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    ports:
+      - "127.0.0.1:18025:8025"
+    volumes:
+      - mailbox:/data
+    restart: unless-stopped
 volumes:
   database:
   uploads:
   configuration:
+  mailbox:
