@@ -25,7 +25,7 @@
 - [x] 活跃下载路径改为平台无关 File 构造；Excel 上传直接从流解析，中文文件名与一行写入已在 ARM64/Linux 容器验证。
 - [x] ARM64/Linux 下监控指标由 JDK 接口采集，定时告警和数据库记录已实测。
 - [x] 持久化配置与 SMTP 主机、端口可注入；本地 Mailpit 捕获预警邮件。
-- [ ] 核对事务生效与失败回滚。
+- [x] Controller 运行时挂载 TransactionInterceptor，Spring 事务中写入后抛错会回滚；各业务异常分支仍需业务级验收。
 
 ## 4. Docker / IDEA 交付
 - [x] Dockerfile、Compose、38 张表初始化、应用和数据库健康检查。
@@ -132,3 +132,5 @@
 - 2026-11-05 Excel 导入端点：用两份中文文件名、仅有表头的工作簿（用户 1 Sheet、主数据 8 Sheet）登录后 POST 到 `/message/studentInfoUpload.shtml` 与 `/message/masterDataUpload.shtml`。修复前两者均执行到容器临时文件写入但最终 HTTP 404；缺少 `@ResponseBody`。补注解后两者均 HTTP 200、JSON `result=true`，`ly_user`/`ly_item`/`ly_workcenter`/`ly_process_route` 行数不变，临时文件已清理。含真实数据行的导入和错误提示行为仍待验证；代码当前在容器 CWD 留下上传原文件，不在持久化卷。
 
 - 2026-11-05 Excel 文件路径修复：原导入实现将上传原文件写到 Tomcat 工作目录且不清理；改为 `WorkbookFactory.create(BufferedInputStream)` 直接解析请求流，调用方在请求结束时关闭流。ARM64/Linux 容器中，中文文件名的用户空模板及主数据单行工作簿均 HTTP 200 JSON `result=true`；主数据工作中心新增 1 行，随后删除，Tomcat 工作目录无遗留 XLSX。含实际用户数据的导入、异常提示和所有文件类型仍待验收。
+
+- 2026-11-05 事务诊断：仅在运行容器临时放置受登录保护的诊断 JSP，读取 MVC 子容器中 `itemController`，确认其 AOP advisor 为 `org.springframework.transaction.interceptor.TransactionInterceptor`。另通过根容器 `transactionManager` 的 `TransactionTemplate` 写入临时 `ly_item` 后主动抛出 `IllegalStateException`，HTTP 输出 `forcedFailure=true;remainingRows=0`，证明本地 InnoDB/Spring 事务回滚基础链路有效。诊断 JSP 已删除，数据库无测试残留；这不证明每个控制器的业务异常分支都正确回滚。
