@@ -477,3 +477,12 @@
 - ly_workcenter
 - ly_workcenter_relation
 - ly_workshop_inventory
+
+## MyBatis 内嵌源码基线（2026-11-05）
+
+对照 `org.mybatis:mybatis:3.2.8:sources`：项目内嵌 236 个 `org/apache/ibatis` Java 文件，198 个内容相同，18 个仅空白差异，20 个还有非空白差异。`Plugin.joinSql(Connection, MappedStatement, BoundSql, Map, List)` 只存在于项目编译类，依赖 JAR 不提供；`com.iemes.plugin.PagePlugin` 在两处调用它。WAR 同时包含内嵌类与原 MyBatis JAR，迁移时保留内嵌源码，后续升级 MyBatis 需要逐一复核这些差异。
+
+
+## 菜单与权限运行基线（2026-11-05）
+
+`ly_resources` 有 30 个 `type=1` 菜单项：26 个 `/...shtml` 页面入口在管理员会话中通过 GET 验证，其余 4 个是分组占位路径。Shiro 动态 `perms[resKey]` 规则需先于 `/** = authc`；已用无角色临时账号验证 `/role/list.shtml` 的拒绝内容、管理员页面仍可访问，并验证退出后重新受限。测试账号及其登录记录已删除。此清单仅证明页面入口与该权限例子，业务写入和每一项权限组合仍需逐项验收。

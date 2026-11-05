@@ -10,7 +10,7 @@
 - [x] 确认本机 ARM64、Java 8、Maven 3.5.4、Docker CLI 与 Compose。
 - [ ] 清点每个 Controller、路由、页面、表、权限、任务及外部依赖。
 - [ ] 核对 SQL 与实体和 Mapper 的表字段差异。
-- [ ] 核对项目内 MyBatis 源码与依赖版本的定制行为。
+- [x] 与 MyBatis 3.2.8 原始 sources.jar 对照全部 236 个内嵌文件，确认 Plugin.joinSql 等项目定制被调用。
 - [ ] 标注已确认功能、待验证功能与原有缺陷。
 
 ## 2. 最小运行验证
@@ -32,10 +32,10 @@
 - [x] 数据库、上传文件及可变配置持久化：隔离项目恢复后数据库记录与文件校验一致。
 - [x] 本机端口、启动、停止、备份恢复、调试文档：部署说明包含已实测命令，JDWP 握手已通过。
 - [ ] IDEA 通过 pom.xml 导入与调试配置。
-- [ ] 干净构建及容器重建验证。
+- [x] 从当前提交的 git archive 全新目录构建 WAR，397 个 Java 文件与 4 项测试通过；Docker 容器已多次重建并保持健康。
 
 ## 5. 全功能验收
-- [ ] 登录退出、角色权限、越权拒绝。
+- [x] 登录、退出、无角色越权拒绝与管理员菜单访问已验证。
 - [ ] 基础资料、车间、BOM、工艺路线。
 - [ ] 计划、订单、生产各工位、库存、质量返修。
 - [ ] 看板、报表、教学评分。
@@ -119,3 +119,8 @@
 - 2026-11-05 IDEA 调试链路：调试 Compose 配置解析成功，临时启动 app/debug 并获得健康状态；`127.0.0.1:5005` 返回完整 `JDWP-Handshake`。恢复普通 Compose 后 5005 关闭，登录页 HTTP 200；IDEA GUI 内实际导入/附加仍待验证。
 
 - 2026-11-05 隔离备份恢复证据：mysqldump 首次因 PROCESS/tablespace 查询报错，增加 `--no-tablespaces` 后无错误完成。导出数据库、上传卷与配置卷到权限受限的 `backups/2026-11-05-restore-verified/`，SHA256SUMS 三项均 OK。`ie-mes-restore-check` 是新建测试项目；恢复后表数 38、用户 9/ID 合计 219、资源 111/ID 合计 10807、工单 12/ID 合计 718、告警 1 与当前库一致。上传 3 文件、配置 1 文件 SHA-256 完全相同，恢复出的独立应用达到 healthy；随后清理了仅测试项目的容器和卷，当前 `ie-mes` 未执行 down -v。Mailpit 历史不在业务备份范围。
+
+- 2026-11-05 干净构建：`git archive HEAD` 解包到 `/private/tmp/iemes-clean-LJrA3D`，JDK 8 + 项目阿里云 Maven settings 执行 `mvn package`，BUILD SUCCESS，4 tests / 0 failures；新 WAR 不含 dbscript。
+- 2026-11-05 MyBatis 原始源码差异：236 个内嵌文件中 198 个原样、18 个只有空白变化、20 个存在非空白变更；项目 `Plugin.joinSql` 不是上游 API，`PagePlugin` 运行时调用。详细见 inventory.md。
+
+- 2026-11-05 权限实测：数据库 30 个 type=1 菜单项中 26 个 `.shtml` 页面管理员 GET 均返回业务页面，4 个为分组占位路径。临时无角色账号在原配置下能看到 `/role/list.shtml`，定位 `spring-shiro.xml` 把 `/** = authc` 排在动态 `perms[...]` 之前；删除前置通配项，保留 `ChainDefinitionSectionMetaSource` 在末尾追加的兜底。修复后临时账号仍可登录但角色页呈现拒绝内容，账号和登录记录均已清理；管理员 26 个菜单页面仍全部可访问，退出后受保护页面回到登录页。
