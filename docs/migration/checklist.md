@@ -110,3 +110,5 @@
 - 2026-11-05 后续：按用户要求，SQL 管理员行旁新增本地明文账号注释，同时更新初始化哈希、当前本地数据库与 Git 忽略的 `.env`。SQL 注释与 `.env` 一致；容器重建后 admin POST 登录仍成功。
 - WAR 排除 `dbscript/**`；jar 内容和运行中容器均确认 SQL 不在应用 Web 根目录。Docker 重建后 app/db 均 healthy，OrbStack HTTPS 登录页返回 200。
 - 鉴权抽查：匿名 `/index.shtml` 跳转登录；管理员登录后首页、物料、计划、看板页面均 HTTP 200。完整业务写入与权限矩阵仍待验收。
+
+- 2026-11-05 看板回归：无头 Chrome 在修复前捕获 `app.v1.js` 注入 `http://www.lanyuanoss.com/lanyuan.shtml`，并确认 `layui/css/modules/layer/skin/style.css` 由 `common.jspf` 的 `layer.config` 发起；图钉菜单计算样式为白底白字。移除旧外部脚本和无效皮肤配置，菜单设深色文字；重新构建并重建 Docker 应用后，Chrome 网络/日志中无上述请求，弹层变为白底 `rgb(34,34,34)` 文字。`node --check`、Docker Maven 构建和 `git diff --check` 通过，app/db 均 healthy。

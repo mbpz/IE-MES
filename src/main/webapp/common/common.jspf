@@ -88,6 +88,7 @@ user-scalable - 用户是否可以手动缩放
 .dmycol-menu{
 	position: absolute;
 	background-color: white;
+	color: #222;
 	font-size: 14px;
     text-align: left;
     list-style: none;
@@ -187,9 +188,7 @@ function onloadurl(){
     });
 }
 layer.config({
-    extend: ['skin/style.css'], //加载新皮肤
-    fix : false,// 用于设定层是否不随滚动条而滚动，固定在可视区域。
-    skin: 'layer-ext-myskin' //一旦设定，所有弹层风格都采用此主题。
+    fix : false //用于设定层是否不随滚动条而滚动，固定在可视区域。
 });
 var rootPath = "${ctx}";
 /**
