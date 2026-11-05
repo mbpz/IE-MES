@@ -28,7 +28,7 @@
 
 ## 本地补充结构
 
-`docker/sql/002-runtime-tables.sql` 从 SpringTaskController 和 jayce/sukey Controller/JSP 的字段消费者重建三个缺失表。它不覆盖原始脚本，不声称恢复了历史数据；待 MySQL 就绪后验证插入、查询及类型兼容性。未为无调用证据的旧 RoleResFormMap / XML 语句盲目补表。
+`docker/sql/002-runtime-tables.sql` 从 SpringTaskController 和 jayce/sukey Controller/JSP 的字段消费者重建三个缺失表。它不覆盖原始脚本，不声称恢复了历史数据；MySQL 已完成 38 表初始化、告警写入与代表性业务查询。未为无调用证据的旧 RoleResFormMap / XML 语句盲目补表。
 
 ## 2026-11-05 当前结构复核
 
