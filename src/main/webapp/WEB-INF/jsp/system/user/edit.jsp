@@ -76,8 +76,8 @@
 					<select name="userFormMap.site" class="form-control">
 						<option value="${user.site}">${user.site}</option>
 						<c:forEach items="${siteInfo}" var="key">
-							<c:if test="${user.site ne  key.siteName}">
-								<option value="${key.siteName}">${key.siteName}</option>
+							<c:if test="${user.site ne key.site}">
+								<option value="${key.site}">${key.siteName}</option>
 							</c:if>
 						</c:forEach>
 					</select>

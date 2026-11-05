@@ -154,7 +154,9 @@ public class PagePlugin implements Interceptor {
 					rs = countStmt.executeQuery();
 			} catch (Exception e) {
 				PagePlugin.logger.info(countSql+" 统计Sql出错,自动转换为普通统计Sql语句!");
+				if (countStmt != null) countStmt.close();
 				countSql = "select count(1) from (" + sql+ ") tmp_count"; 
+				countStmt = connection.prepareStatement(countSql);
 				  BoundSql countBS = new BoundSql(mappedStatement.getConfiguration(),countSql.toString(),boundSql.getParameterMappings(),boundSql.getParameterObject());    
 				  Plugin.setParameters(countStmt,mappedStatement,countBS,boundSql.getParameterObject());    
 					rs = countStmt.executeQuery();

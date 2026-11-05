@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -58,6 +59,7 @@ import com.iemes.entity.WorkCenterRelationFormMap;
 import com.iemes.mapper.BaseExtMapper;
 import com.iemes.mapper.RoleMapper;
 import com.iemes.mapper.UserMapper;
+import com.iemes.service.UserProvisioningPolicy;
 import com.iemes.util.Common;
 import com.iemes.util.PasswordHelper;
 
@@ -77,6 +79,8 @@ public class MessageUploadController extends BaseController {
 	private RoleMapper roleMapper;
 	@Inject
 	private BaseExtMapper baseExtMapper;
+	@Inject
+	private UserProvisioningPolicy userProvisioningPolicy;
 
 	/**
 	 * 学生信息导出弹出框
@@ -173,8 +177,9 @@ public class MessageUploadController extends BaseController {
 						if (CollectionUtils.isEmpty(roleList)) {
 							throw new IllegalArgumentException("用户表第 " + (i + 1) + " 行的角色不存在");
 						}
-						baseMapper.addEntity(user);
 							Long roleId = Long.parseLong(roleList.get(0).get("id").toString());
+						userProvisioningPolicy.requireAssignment(siteA, Collections.singletonList(roleId.toString()));
+						baseMapper.addEntity(user);
 							UserGroupsFormMap userGroupsFormMap = new UserGroupsFormMap();
 							userGroupsFormMap.put("userId", user.get("id"));
 							userGroupsFormMap.put("roleId", roleId);

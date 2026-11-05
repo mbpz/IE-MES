@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.iemes.annotation.SystemLog;
 import com.iemes.controller.index.BaseController;
@@ -26,6 +28,7 @@ import com.iemes.exception.SystemException;
 import com.iemes.mapper.UserMapper;
 import com.iemes.mapper.site.SiteMapper;
 import com.iemes.plugin.PageView;
+import com.iemes.service.UserProvisioningPolicy;
 import com.iemes.util.Common;
 import com.iemes.util.JsonUtils;
 import com.iemes.util.POIUtils;
@@ -45,6 +48,8 @@ public class UserController extends BaseController {
 	
 	@Inject
 	private SiteMapper siteMapper;
+	@Inject
+	private UserProvisioningPolicy userProvisioningPolicy;
 	
 	@RequestMapping("list")
 	public String listUI(Model model) throws Exception {
@@ -60,8 +65,8 @@ public class UserController extends BaseController {
 		String site = session.getAttribute("site").toString();
 		UserFormMap userFormMap = getFormMap(UserFormMap.class);
 		userFormMap=toFormMap(userFormMap, pageNow, pageSize,userFormMap.getStr("orderby"));
-		userFormMap.put("column", column);
-		userFormMap.put("sort", sort);
+		userFormMap.put("column", sortableUserColumn(column));
+		userFormMap.put("sort", safeSortDirection(sort));
 		userFormMap.put("site", site);
         pageView.setRecords(userMapper.findUserPage(userFormMap));//不调用默认分页,调用自已的mapper中findUserPage
         return pageView;
@@ -71,6 +76,9 @@ public class UserController extends BaseController {
 	public void download(HttpServletRequest request, HttpServletResponse response) throws IOException {
 		String fileName = "用户列表";
 		UserFormMap userFormMap = findHasHMap(UserFormMap.class);
+		userFormMap.put("site", SecurityUtils.getSubject().getSession().getAttribute("site"));
+		userFormMap.put("column", sortableUserColumn(userFormMap.getStr("column")));
+		userFormMap.put("sort", safeSortDirection(userFormMap.getStr("sort")));
 		//exportData = 
 		// [{"colkey":"sql_info","name":"SQL语句","hide":false},
 		// {"colkey":"total_time","name":"总响应时长","hide":false},
@@ -86,6 +94,17 @@ public class UserController extends BaseController {
 		POIUtils.exportToExcel(response, listMap, lis, fileName);
 	}
 
+	private String sortableUserColumn(String column) {
+		if ("id".equals(column) || "userName".equals(column) || "accountName".equals(column)
+				|| "locked".equals(column) || "description".equals(column)
+				|| "site".equals(column) || "createTime".equals(column)) return column;
+		return null;
+	}
+
+	private String safeSortDirection(String sort) {
+		return "desc".equalsIgnoreCase(sort) ? "desc" : "asc";
+	}
+
 	@RequestMapping("addUI")
 	public String addUI(Model model,HttpServletRequest request) throws Exception {
 		SiteFormMap siteFormMap = getFormMap(SiteFormMap.class);
@@ -99,17 +118,26 @@ public class UserController extends BaseController {
 	@SystemLog(module="系统管理",methods="用户管理-新增用户")//凡需要处理业务逻辑的.都需要记录操作日志
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	public String addEntity(String txtGroupsSelect){
+		UserFormMap submitted = getFormMap(UserFormMap.class);
+		if (Common.isEmpty(submitted.getStr("accountName")) || Common.isEmpty(submitted.getStr("password"))) return "error";
+		List<String> roleIds;
 		try {
-			UserFormMap userFormMap = getFormMap(UserFormMap.class);
-			userFormMap.put("txtGroupsSelect", txtGroupsSelect);
+			roleIds = userProvisioningPolicy.parseRoleIds(txtGroupsSelect);
+			userProvisioningPolicy.requireAssignment(submitted.getStr("site"), roleIds);
+		} catch (IllegalArgumentException e) {
+			return "error";
+		}
+		try {
+			UserFormMap userFormMap = new UserFormMap();
+			for (String key : new String[]{"userName", "accountName", "password", "description", "locked", "site"}) {
+				if (submitted.get(key) != null) userFormMap.put(key, submitted.get(key));
+			}
 			PasswordHelper passwordHelper = new PasswordHelper();
-			userFormMap.set("password",userFormMap.get("password"));
 			passwordHelper.encryptPassword(userFormMap);
 			userMapper.addEntity(userFormMap);//新增后返回新增信息
-			if (!Common.isEmpty(txtGroupsSelect)) {
-				String[] txt = txtGroupsSelect.split(",");
+			if (!roleIds.isEmpty()) {
 				UserGroupsFormMap userGroupsFormMap = new UserGroupsFormMap();
-				for (String roleId : txt) {
+				for (String roleId : roleIds) {
 					userGroupsFormMap.put("userId", userFormMap.get("id"));
 					userGroupsFormMap.put("roleId", roleId);
 					userMapper.addEntity(userGroupsFormMap);
@@ -127,6 +155,10 @@ public class UserController extends BaseController {
 	@SystemLog(module="系统管理",methods="用户管理-删除用户")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		for (String id : ids) {
+			if (!userProvisioningPolicy.canManageUser(id)) return "error";
+		}
 		for (String id : ids) {
 			userMapper.deleteByAttribute("userId", id, UserGroupsFormMap.class);
 //			userMapper.deleteByAttribute("userId", id, ResUserFormMap.class);
@@ -138,6 +170,7 @@ public class UserController extends BaseController {
 	@RequestMapping("editUI")
 	public String editUI(Model model,HttpServletRequest request) throws Exception {
 		String id = getPara("id");
+		if (!userProvisioningPolicy.canManageUser(id)) return "redirect:/denied.jsp";
 		if(Common.isNotEmpty(id)){
 			model.addAttribute("user", userMapper.findbyFrist("id", id, UserFormMap.class));
 		}
@@ -152,13 +185,24 @@ public class UserController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="系统管理",methods="用户管理-修改用户")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity(String txtGroupsSelect) throws Exception {
-		UserFormMap userFormMap = getFormMap(UserFormMap.class);
-		userFormMap.put("txtGroupsSelect", txtGroupsSelect);
+		UserFormMap submitted = getFormMap(UserFormMap.class);
+		String userId = submitted.getStr("id");
+		if (!userProvisioningPolicy.canManageUser(userId)) return "error";
+		List<String> roleIds;
+		try {
+			roleIds = userProvisioningPolicy.parseRoleIds(txtGroupsSelect);
+			userProvisioningPolicy.requireAssignment(submitted.getStr("site"), roleIds);
+		} catch (IllegalArgumentException e) {
+			return "error";
+		}
+		UserFormMap userFormMap = new UserFormMap();
+		for (String key : new String[]{"id", "userName", "accountName", "locked", "site", "description"}) {
+			if (submitted.get(key) != null) userFormMap.put(key, submitted.get(key));
+		}
 		userMapper.editEntity(userFormMap);
-		userMapper.deleteByAttribute("userId", userFormMap.get("id")+"", UserGroupsFormMap.class);
-		if(!Common.isEmpty(txtGroupsSelect)){
-			String[] txt = txtGroupsSelect.split(",");
-			for (String roleId : txt) {
+		userMapper.deleteByAttribute("userId", userId, UserGroupsFormMap.class);
+		if(!roleIds.isEmpty()){
+			for (String roleId : roleIds) {
 				UserGroupsFormMap userGroupsFormMap = new UserGroupsFormMap();
 				userGroupsFormMap.put("userId", userFormMap.get("id"));
 				userGroupsFormMap.put("roleId", roleId);
@@ -197,13 +241,29 @@ public class UserController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="系统管理",methods="用户管理-修改密码")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editPassword() throws Exception{
-		// 当验证都通过后，把用户信息放在session里
-		UserFormMap userFormMap = getFormMap(UserFormMap.class);
-		userFormMap.put("password", userFormMap.get("newpassword"));
-		//这里对修改的密码进行加密
+		UserFormMap submitted = getFormMap(UserFormMap.class);
+		String newPassword = submitted.getStr("newpassword");
+		String confirmation = submitted.getStr("confirmpassword");
+		if (newPassword == null || newPassword.length() < 6 || !newPassword.equals(confirmation)) {
+			return "error";
+		}
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+		UserFormMap currentUser = (UserFormMap) Common.findUserSession(request);
+		if (currentUser == null) {
+			return "error";
+		}
+		if ((submitted.get("id") != null && !currentUser.get("id").toString().equals(submitted.get("id").toString()))
+				|| (submitted.get("accountName") != null && !currentUser.get("accountName").equals(submitted.get("accountName")))) {
+			return "error";
+		}
+		UserFormMap passwordUpdate = new UserFormMap();
+		passwordUpdate.put("id", currentUser.get("id"));
+		passwordUpdate.put("accountName", currentUser.get("accountName"));
+		passwordUpdate.put("password", newPassword);
 		PasswordHelper passwordHelper = new PasswordHelper();
-		passwordHelper.encryptPassword(userFormMap);
-		userMapper.editEntity(userFormMap);
+		passwordHelper.encryptPassword(passwordUpdate);
+		passwordUpdate.remove("accountName");
+		userMapper.editEntity(passwordUpdate);
 		return "success";
 	}
 }

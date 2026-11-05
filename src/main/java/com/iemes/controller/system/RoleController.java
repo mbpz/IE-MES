@@ -1,10 +1,13 @@
 package com.iemes.controller.system;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.inject.Inject;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.shiro.SecurityUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
@@ -16,6 +19,7 @@ import com.iemes.controller.index.BaseController;
 import com.iemes.entity.RoleFormMap;
 import com.iemes.mapper.RoleMapper;
 import com.iemes.plugin.PageView;
+import com.iemes.service.UserProvisioningPolicy;
 import com.iemes.util.Common;
 
 /**
@@ -29,6 +33,8 @@ import com.iemes.util.Common;
 public class RoleController extends BaseController {
 	@Inject
 	private RoleMapper roleMapper;
+	@Inject
+	private UserProvisioningPolicy userProvisioningPolicy;
 
 	@RequestMapping("list")
 	public String listUI(Model model) throws Exception {
@@ -95,10 +101,18 @@ public class RoleController extends BaseController {
 	
 	@RequestMapping("selRole")
 	public String seletRole(Model model) throws Exception {
+		if (!SecurityUtils.getSubject().isPermitted("account_add")
+				&& !SecurityUtils.getSubject().isPermitted("account_edit")) {
+			return "redirect:/denied.jsp";
+		}
 		RoleFormMap roleFormMap = getFormMap(RoleFormMap.class);
 		Object userId = roleFormMap.get("userId");
 		if(null!=userId){
-			List<RoleFormMap> list = roleMapper.seletUserRole(roleFormMap);
+			if (!userProvisioningPolicy.canManageUser(userId.toString())) return "redirect:/denied.jsp";
+			List<RoleFormMap> list = new ArrayList<RoleFormMap>();
+			for (RoleFormMap role : roleMapper.seletUserRole(roleFormMap)) {
+				if (userProvisioningPolicy.canAssignRole(role.get("id").toString())) list.add(role);
+			}
 			String ugid = "";
 			for (RoleFormMap ml : list) {
 				ugid += ml.get("id")+",";
@@ -111,6 +125,11 @@ public class RoleController extends BaseController {
 			}
 		}
 		List<RoleFormMap> roles = roleMapper.findByWhere(roleFormMap);
+		Iterator<RoleFormMap> iterator = roles.iterator();
+		while (iterator.hasNext()) {
+			RoleFormMap role = iterator.next();
+			if (!userProvisioningPolicy.canAssignRole(role.get("id").toString())) iterator.remove();
+		}
 		model.addAttribute("role", roles);
 		return Common.BACKGROUND_PATH + "/system/user/roleSelect";
 	}

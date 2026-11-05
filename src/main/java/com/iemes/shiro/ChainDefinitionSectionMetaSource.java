@@ -44,6 +44,32 @@ public class ChainDefinitionSectionMetaSource implements FactoryBean<Ini.Section
 			}
 
 		}
+		// Resource rows cover menu pages, but not their data and write endpoints.
+		// Keep self-service password routes available to any authenticated user.
+		// Spring MVC accepts extra suffixes before .shtml; match them before module fallbacks.
+		section.put("/user/updatePassword*.shtml", "authc");
+		section.put("/user/editPassword*.shtml", "authc");
+		section.put("/user/findByPage*.shtml", "perms[account]");
+		section.put("/user/export*.shtml", "perms[account]");
+		section.put("/user/isExist*.shtml", "perms[account_add]");
+		section.put("/user/addUI*.shtml", "perms[account_add]");
+		section.put("/user/addEntity*.shtml", "perms[account_add]");
+		section.put("/user/editUI*.shtml", "perms[account_edit]");
+		section.put("/user/editEntity*.shtml", "perms[account_edit]");
+		section.put("/user/deleteEntity*.shtml", "perms[account_delete]");
+		section.put("/user/**", "perms[account]");
+		section.put("/role/findByPage*.shtml", "perms[role]");
+		section.put("/role/selRole*.shtml", "authc");
+		section.put("/role/addUI*.shtml", "perms[role_add]");
+		section.put("/role/addEntity*.shtml", "perms[role_add]");
+		section.put("/role/editUI*.shtml", "perms[role_edit]");
+		section.put("/role/editEntity*.shtml", "perms[role_edit]");
+		section.put("/role/deleteEntity*.shtml", "perms[role_delete]");
+		section.put("/role/**", "perms[role]");
+		section.put("/message/upload*.shtml", "perms[account_add]");
+		section.put("/message/studentInfoUpload*.shtml", "perms[account_add]");
+		section.put("/message/userInfoDownLoad*.shtml", "perms[account_add]");
+		section.put("/message/**", "perms[base_data]");
 		// 所有资源的访问权限，必须放在最后
 		/*section.put("/**", "authc");*/
 		/** 如果需要一个用户只能登录一处地方,,修改为 section.put("/**", "authc,kickout,sysUser,user"); **/

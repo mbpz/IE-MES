@@ -85,7 +85,7 @@ label[class^="btn btn-default"] {
 				<div class="col-sm-9">
 					<select name="userFormMap.site" class="form-control">
 						<c:forEach items="${siteInfo}" var="key">
-							<option value="${key.siteName}">${key.siteName}</option>
+							<option value="${key.site}">${key.siteName}</option>
 						</c:forEach>
 					</select>
 				</div>
