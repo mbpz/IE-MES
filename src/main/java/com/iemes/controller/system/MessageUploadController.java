@@ -97,10 +97,16 @@ public class MessageUploadController extends BaseController {
 	@ResponseBody
 	public BaseResponse studentInfoUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
+		if (file == null || file.isEmpty()) {
+			baseResponse.setMessage("请选择 Excel 文件");
+			return baseResponse;
+		}
 		try (InputStream input = file.getInputStream()) {
 			getUserAndRoleByExcel(input);
-		} catch (InvalidFormatException e) {
-			e.printStackTrace();
+		} catch (InvalidFormatException | IllegalArgumentException e) {
+			baseResponse.setMessage("Excel 文件格式不正确");
+			baseResponse.setResult(false);
+			return baseResponse;
 		}
 		baseResponse.setMessage(ConstantController.SUCCESS);
 		baseResponse.setResult(true);
@@ -126,6 +132,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex1 >= 1){
 			for (int i = 1; i <= lastRowIndex1; i++) {
 				Row row = sheet1.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex1; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -258,10 +265,16 @@ public class MessageUploadController extends BaseController {
 	@ResponseBody
 	public BaseResponse masterDataUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
+		if (file == null || file.isEmpty()) {
+			baseResponse.setMessage("请选择 Excel 文件");
+			return baseResponse;
+		}
 		try (InputStream input = file.getInputStream()) {
 			getMasterDataByExcel(input);
-		} catch (InvalidFormatException e) {
-			e.printStackTrace();
+		} catch (InvalidFormatException | IllegalArgumentException e) {
+			baseResponse.setMessage("Excel 文件格式不正确");
+			baseResponse.setResult(false);
+			return baseResponse;
 		}
 		baseResponse.setMessage(ConstantController.SUCCESS);
 		baseResponse.setResult(true);
@@ -286,6 +299,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = workcenterSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -377,6 +391,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = operationSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -444,6 +459,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = resourceSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -478,6 +494,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = routeSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -547,6 +564,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = itemSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -588,6 +606,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = itemBomSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -639,6 +658,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = ncGroupSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -673,6 +693,7 @@ public class MessageUploadController extends BaseController {
 		if(lastRowIndex >= 1){
 			for (int i = 1; i <= lastRowIndex; i++) {
 				Row row = ncSheet.getRow(i);
+				if (isBlankRow(row)) continue;
 				for (int j = 0; j < lastColumnIndex; j++) {
 					String titleCell = row.getCell(j).getStringCellValue();  
 					if(null == titleCell || titleCell.trim().isEmpty()){
@@ -710,4 +731,12 @@ public class MessageUploadController extends BaseController {
 		return ;
 	}
 
+	private static boolean isBlankRow(Row row) {
+		if (row == null) return true;
+		for (Cell cell : row) {
+			if (cell == null || cell.getCellType() == Cell.CELL_TYPE_BLANK) continue;
+			if (cell.getCellType() != Cell.CELL_TYPE_STRING || !cell.getStringCellValue().trim().isEmpty()) return false;
+		}
+		return true;
+	}
 }

@@ -6,7 +6,7 @@ COPY src ./src
 RUN --mount=type=cache,id=iemes-maven,target=/root/.m2 mvn -B -s settings.xml -gs settings.xml package
 RUN mkdir /unpacked && cd /unpacked && jar xf /build/target/IE-MES.war
 COPY docker/ContainerSupport.java /support/ContainerSupport.java
-RUN javac -d /support /support/ContainerSupport.java
+RUN javac -cp '/unpacked/WEB-INF/lib/*' -d /support /support/ContainerSupport.java
 
 FROM tomcat:9.0.113-jdk8-temurin
 RUN rm -rf /usr/local/tomcat/webapps/*

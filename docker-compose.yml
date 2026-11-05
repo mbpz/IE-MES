@@ -30,6 +30,7 @@ services:
       dockerfile: Dockerfile
     environment:
       IEMES_DB_PASSWORD: ${IEMES_DB_PASSWORD:?Set IEMES_DB_PASSWORD in .env}
+      IEMES_ADMIN_PASSWORD: ${IEMES_ADMIN_PASSWORD:?Set a unique IEMES_ADMIN_PASSWORD in .env}
       IEMES_SMTP_HOST: mailpit
       IEMES_SMTP_PORT: "1025"
       TZ: Asia/Shanghai

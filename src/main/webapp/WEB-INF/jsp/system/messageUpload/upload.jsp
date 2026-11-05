@@ -76,7 +76,7 @@
 						layer.msg('哎呀，好像出错了');
 					},
 					success : function(data) { //请求成功后处理函数。
-						layer.msg('上传完毕');
+						layer.msg(data.result ? '上传完毕' : (data.message || '上传失败'));
 						/* var index = parent.layer.getFrameIndex(window.name); //获取窗口索引  
 						parent.layer.close(index); */
 					}
