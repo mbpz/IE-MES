@@ -1,8 +1,8 @@
 package com.iemes.controller.system;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -97,9 +97,8 @@ public class MessageUploadController extends BaseController {
 	@ResponseBody
 	public BaseResponse studentInfoUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
-		String filename = file.getOriginalFilename();
-		try {
-			getUserAndRoleByExcel(file.getInputStream(),filename);
+		try (InputStream input = file.getInputStream()) {
+			getUserAndRoleByExcel(input);
 		} catch (InvalidFormatException e) {
 			e.printStackTrace();
 		}
@@ -113,17 +112,11 @@ public class MessageUploadController extends BaseController {
 	 * UserInfo数据
 	 * 将excel数据传到数据库
 	 * @param is
-	 * @param fileName
 	 * @throws InvalidFormatException
 	 * @throws IOException
 	 */
-	private void getUserAndRoleByExcel(InputStream is ,String fileName) throws InvalidFormatException, IOException{
-		inputstreamtofile(is,fileName);
-		InputStream fis = null;
-		File file  = new File(fileName);
-
-		fis = new FileInputStream(file); 
-		Workbook book = WorkbookFactory.create(fis);
+	private void getUserAndRoleByExcel(InputStream is) throws InvalidFormatException, IOException{
+		Workbook book = WorkbookFactory.create(new BufferedInputStream(is));
 
 		//第一个sheet
 		Sheet sheet1 = book.getSheetAt(0); //或者book.createSheet("Sheet"+number);
@@ -178,28 +171,6 @@ public class MessageUploadController extends BaseController {
 
 
 		return ;
-	}
-
-
-	/**
-	 * 将输入流 转成临时文件
-	 * @param ins
-	 * @param fileName
-	 */
-	private static void inputstreamtofile(InputStream ins ,String fileName) {
-		try {
-			File file = new File(fileName);
-			OutputStream os = new FileOutputStream(file);
-			int bytesRead = 0;
-			byte[] buffer = new byte[8192];
-			while ((bytesRead = ins.read(buffer, 0, 8192)) != -1) {
-				os.write(buffer, 0, bytesRead);
-			}
-			os.close();
-			ins.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
 	}
 
 
@@ -287,9 +258,8 @@ public class MessageUploadController extends BaseController {
 	@ResponseBody
 	public BaseResponse masterDataUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
-		String filename = file.getOriginalFilename();
-		try {
-			getMasterDataByExcel(file.getInputStream(),filename);
+		try (InputStream input = file.getInputStream()) {
+			getMasterDataByExcel(input);
 		} catch (InvalidFormatException e) {
 			e.printStackTrace();
 		}
@@ -299,19 +269,14 @@ public class MessageUploadController extends BaseController {
 	}
 
 
-	private void getMasterDataByExcel(InputStream is ,String fileName) throws Exception{
+	private void getMasterDataByExcel(InputStream is) throws Exception{
 		Session session = SecurityUtils.getSubject().getSession();
 		String site = session.getAttribute("site").toString();
 		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
 		UserFormMap user = (UserFormMap)Common.findUserSession(request);
 		String byUser = user.getStr("accountName");
 
-		inputstreamtofile(is,fileName);
-		InputStream fis = null;
-		File file  = new File(fileName);
-
-		fis = new FileInputStream(file); 
-		Workbook book = WorkbookFactory.create(fis);
+		Workbook book = WorkbookFactory.create(new BufferedInputStream(is));
 
 		//第一个sheet  工作中心
 		Sheet workcenterSheet = book.getSheetAt(0); //或者book.createSheet("Sheet"+number);

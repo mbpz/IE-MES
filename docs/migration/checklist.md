@@ -22,7 +22,7 @@
 
 ## 3. 兼容性修复
 - [x] 固定构建插件、阿里云仓库和经验证的 JDK 8 / Maven 3.5.4、3.9.9 / Tomcat 9 / MySQL 8.0.44 版本。
-- [ ] 修复 Linux 文件路径、文件名与编码兼容性。
+- [x] 活跃下载路径改为平台无关 File 构造；Excel 上传直接从流解析，中文文件名与一行写入已在 ARM64/Linux 容器验证。
 - [x] ARM64/Linux 下监控指标由 JDK 接口采集，定时告警和数据库记录已实测。
 - [x] 持久化配置与 SMTP 主机、端口可注入；本地 Mailpit 捕获预警邮件。
 - [ ] 核对事务生效与失败回滚。
@@ -130,3 +130,5 @@
 - 2026-11-05 当前数据库结构复核：原 SQL 35 张表 + 补充 SQL 3 张表、38 个实体表注解；`ly_role_res` 注解无表、`ly_resource_type` 有表无注解，`ly_res_roles` 只在未见调用的旧 Mapper 语句中。详情见 database-gaps.md；列级业务映射仍待逐项核对。
 
 - 2026-11-05 Excel 导入端点：用两份中文文件名、仅有表头的工作簿（用户 1 Sheet、主数据 8 Sheet）登录后 POST 到 `/message/studentInfoUpload.shtml` 与 `/message/masterDataUpload.shtml`。修复前两者均执行到容器临时文件写入但最终 HTTP 404；缺少 `@ResponseBody`。补注解后两者均 HTTP 200、JSON `result=true`，`ly_user`/`ly_item`/`ly_workcenter`/`ly_process_route` 行数不变，临时文件已清理。含真实数据行的导入和错误提示行为仍待验证；代码当前在容器 CWD 留下上传原文件，不在持久化卷。
+
+- 2026-11-05 Excel 文件路径修复：原导入实现将上传原文件写到 Tomcat 工作目录且不清理；改为 `WorkbookFactory.create(BufferedInputStream)` 直接解析请求流，调用方在请求结束时关闭流。ARM64/Linux 容器中，中文文件名的用户空模板及主数据单行工作簿均 HTTP 200 JSON `result=true`；主数据工作中心新增 1 行，随后删除，Tomcat 工作目录无遗留 XLSX。含实际用户数据的导入、异常提示和所有文件类型仍待验收。
