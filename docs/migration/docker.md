@@ -65,3 +65,37 @@ IDEA 新建 Remote JVM Debug，Attach 模式，主机 localhost，端口 5005，
 Compose 启动 Mailpit，收件箱在 `http://127.0.0.1:18025`。应用通过内部 SMTP 服务 `mailpit:1025` 发信，使用 `example.test` 虚拟收发地址，不向真实邮箱发送。首次初始化配置卷时自动写入虚拟地址；已存在的配置卷保留已有值。SMTP 主机、端口通过 `IEMES_SMTP_HOST`、`IEMES_SMTP_PORT` 注入，非容器环境默认 `smtp.163.com:25`。本机 `.env` 可以用 `IEMES_MAILPIT_IMAGE` 覆盖 Mailpit 镜像来源；默认 `axllent/mailpit:v1.32.0`。
 
 2026-11-05 在 ARM64 Docker 中临时将 CPU、JVM、内存告警阈值设为 0，定时任务发送 1 封邮件并写入 1 条 `ly_server_info`，随后恢复原阈值 100/100/100。
+
+## 本地备份与恢复
+
+以下命令在项目根目录执行。`backups/` 被 Git 忽略；备份含数据库及配置内容，应只保存在可信的本机目录。目录参数按实际日期或批次替换。
+
+```sh
+mkdir -m 700 -p backups/2026-11-05-restore-verified
+docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysqldump -uiemes --single-transaction --no-tablespaces --routines --triggers --set-gtid-purged=OFF iemes_v1' > backups/2026-11-05-restore-verified/database.sql
+docker compose exec -T app tar -C /usr/local/tomcat/webapps/ROOT/uploadFile -cf - . > backups/2026-11-05-restore-verified/uploads.tar
+docker compose exec -T app tar -C /var/lib/iemes -cf - config.properties > backups/2026-11-05-restore-verified/configuration.tar
+chmod 600 backups/2026-11-05-restore-verified/*
+```
+
+恢复前先在独立 Compose 项目验证，不覆盖正在运行的 `ie-mes`：
+
+```sh
+docker compose -p ie-mes-restore-check up -d --no-build --wait db
+docker compose -p ie-mes-restore-check exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -uiemes iemes_v1' < backups/2026-11-05-restore-verified/database.sql
+docker compose -p ie-mes-restore-check run --rm --no-deps -T --entrypoint tar app -C /usr/local/tomcat/webapps/ROOT/uploadFile -xf - < backups/2026-11-05-restore-verified/uploads.tar
+docker compose -p ie-mes-restore-check run --rm --no-deps -T --entrypoint tar app -C /var/lib/iemes -xf - < backups/2026-11-05-restore-verified/configuration.tar
+docker compose -p ie-mes-restore-check run -d --rm --no-deps --name ie-mes-restore-check-app-probe app
+docker inspect --format '{{.State.Health.Status}}' ie-mes-restore-check-app-probe
+```
+
+确认测试应用为 `healthy` 后，清理本次独立恢复环境：
+
+```sh
+docker stop ie-mes-restore-check-app-probe
+docker compose -p ie-mes-restore-check down -v
+```
+
+`down -v` 只用于这个一次性测试项目，不能对正在使用的 `ie-mes` 项目执行。Mailpit 邮件历史不包含在业务备份中。
+
+2026-11-05 已按上述流程实测：恢复前后 38 张表、9 个用户、111 个资源、12 张工单、1 条告警记录相符；上传卷 3 个文件和配置卷 1 个文件的 SHA-256 一致；恢复出的独立应用达到 `healthy`。本机保留的备份在 `backups/2026-11-05-restore-verified/`，文件权限为 0600。
