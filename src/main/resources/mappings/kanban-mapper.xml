@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
     "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.iemes.mapper.KanbanMapper">
-	<!-- Aggregate each source by site and item before joining, so BOM rows cannot multiply receipts. -->
+	<!-- Aggregate by site and item before joining; unconfigured or unparseable thresholds stay null. -->
 	<select id="findKanBanData" parameterType="java.util.Map" resultType="java.util.HashMap">
 		SELECT received.item,
 		       item.item_name,
@@ -19,10 +19,12 @@
 			GROUP BY site, item
 		) received
 		JOIN ly_item item ON item.site = received.site AND item.item_no = received.item
-		JOIN (
+		LEFT JOIN (
 			SELECT site, item_no,
-			       MAX(CAST(balance_up AS UNSIGNED)) balance_up,
-			       MAX(CAST(balance_down AS UNSIGNED)) balance_down
+			       MAX(CASE WHEN balance_up REGEXP '^[+-]?([0-9]{1,35}([.][0-9]{0,30})?|[.][0-9]{1,30})$'
+			                THEN CAST(balance_up AS DECIMAL(65, 30)) END) balance_up,
+			       MAX(CASE WHEN balance_down REGEXP '^[+-]?([0-9]{1,35}([.][0-9]{0,30})?|[.][0-9]{1,30})$'
+			                THEN CAST(balance_down AS DECIMAL(65, 30)) END) balance_down
 			FROM ly_item_bom_relation
 			WHERE site = #{site}
 			GROUP BY site, item_no
