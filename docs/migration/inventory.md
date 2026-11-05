@@ -512,6 +512,6 @@
 - `/produce/visual_inspection_pod.shtml` → `WEB-INF/jsp/system/produce/visual_inspection_pod.jsp`
 
 
-**额外页面缺口**：`WEB-INF/jsp/qc/nc_handle_info.jsp` 虽存在，运行时返回的 HTML 只有脚本引用和空页面骨架；隔离环境中的维修 API 可写入记录，但此详情页无法展示不良内容及处置控件。需核对原 Eclipse 工作区是否有更完整版本。
+**质量详情页条件**：`WEB-INF/jsp/qc/nc_handle_info.jsp` 包含完整的条件式表单，仅当 Controller 查询到匹配的不良产品并设置 `exist=true` 才渲染。隔离测试 SFC 未满足 `findNCBySFC` 的代码/站点关联，因此只返回页面骨架；不能据此认定 JSP 缺失。当前种子库站点 `*` 有 3 条打开的不良记录，但没有任何一条能在相同站点找到对应 `ly_nc_code`，该页面在此种子数据下仍未通过可视验收。
 
 **MyBatis 运行约束**：`PagePlugin` 在 StatementHandler.prepare 才替换通用 Mapper SQL，而 MyBatis 会话缓存键已按替换前 SQL 生成；同一事务内多个 `findByNames` 调用可能错误复用不同表的结果。现由 `mybatis-config.xml` 将 localCacheScope 设为 STATEMENT，已用隔离两步工单终结与 28 个表格/9 种报表接口复验。

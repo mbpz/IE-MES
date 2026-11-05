@@ -45,3 +45,7 @@
 ## 字面表名与字段片段复核（2026-11-05）
 
 12 个 Mapper XML 共引用 26 个字面表名，只有 `ly_res_roles` 缺表；对应 `deleteResourcesRole`/`addRoleRes` 未见 Java 调用。各 `<sql id="selectId">` 中可直接识别的简单字段均能在相关实际表中找到；`log-mapper.xml` 的 8 个字段均属于 `ly_log`。当前库共 294 列。此静态检查不覆盖运行时动态拼接的所有条件，后者需业务流程验收。
+
+## 质量种子数据关联缺口（2026-11-05）
+
+当前站点 `*` 有 3 条打开的 `ly_sfc_nc` 不良记录，但与同站点 `ly_nc_code` 的匹配数为 0。`findNCBySFC` 的多表查询因此无法渲染 `nc_handle_info.jsp` 中的条件式处置表单；此为种子数据关联缺口，不是 JSP 文件不存在。未补造缺失的代码/组记录。

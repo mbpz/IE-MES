@@ -147,4 +147,6 @@
 
 - 2026-11-05 隔离业务验收：新建 `ie-mes-acceptance` 独立 Compose 项目，从已验证备份恢复数据库，应用在本机 18081 达到 healthy，原 `ie-mes` 一直独立运行。管理员 API 新增 BOM 主表/物料关系各 1 行、工艺路线/步骤各 1 行；新工单从状态 0 创建、下达状态 1 且生成 SFC/步骤各 1 行。`getShoporderInfoByNo` 首次因 `LocalDateTime` 强转 Date 失败，已在 FormMap.getDate 兼容 Java 8 日期对象，重建后既有工单的起止时间为字符串，缺失工单返回 result=false。
 - 2026-11-05 两步生产链：开始按钮原先将工单号放错到 SFC 查询对象，导致当前工单状态未从 1 变 2；修复后当前工单独自变 2。末工序原先先统计当前尚未完成的 SFC，且用忽略表字段的 findByWhere 查询全库；修复后改为按工单/站点 findByNames 并排除当前即将完成的 SFC。该事务中通用 MyBatis Mapper 的动态 SQL 在生成本地缓存键之后才重写，曾把 RoutingStepFormMap 缓存结果返回给 ShopOrderSfcFormMap 查询；增加 MyBatis `localCacheScope=STATEMENT` 后，隔离工单末工序从状态 2 到 3，SFC=2、OpA/OpB 步骤都为 2。更改后 28 个表格数据接口与 9 种公共报表查询全部复测通过。
-- 2026-11-05 库存/质量隔离验证：物料接收 API 生成 1 条库存记录，receive=1；生产中 SFC 记录不良后 `ly_sfc_nc` 生成 1 条、步骤和 SFC 均为状态 4；维修 API 生成 1 条 `ly_nc_repair`，不良记录状态 1、SFC 恢复状态 1。`nc_handle_info.jsp` 文件存在但只输出空页面骨架，前端处置流程仍无法验收。完整工位、报废及库存消耗分支仍未验证。
+- 2026-11-05 库存/质量隔离验证：物料接收 API 生成 1 条库存记录，receive=1；生产中 SFC 记录不良后 `ly_sfc_nc` 生成 1 条、步骤和 SFC 均为状态 4；维修 API 生成 1 条 `ly_nc_repair`，不良记录状态 1、SFC 恢复状态 1。`nc_handle_info.jsp` 实际包含条件式处置表单；本次测试 SFC 的关联数据不满足条件，前端处置详情仍需完整关联数据验收。完整工位、报废及库存消耗分支仍未验证。
+
+- 2026-11-05 更正质量详情页判断：JSP 有完整 `<c:if test="${exist==true}">` 表单，隔离测试记录的 `findNCBySFC` 关联结果为空才只输出页面骨架。当前种子库 site=`*` 的 3 条打开不良记录与同站点 `ly_nc_code` 匹配数为 0；不能用这些数据证明页面本身损坏，需完整关联样本验收。
