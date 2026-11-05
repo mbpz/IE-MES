@@ -9,7 +9,7 @@
 - [x] 确认 Maven WAR、Java 7 编译目标、Spring MVC/MyBatis/Shiro、MySQL。
 - [x] 确认本机 ARM64、Java 8、Maven 3.5.4、Docker CLI 与 Compose。
 - [x] 静态清点 Controller、路由注解、JSP、数据库表、权限资源、任务及外部依赖，并记录 12 个缺失页面路由。
-- [ ] 核对 SQL 与实体和 Mapper 的表字段差异。
+- [x] 对照 38 张库表与 38 个实体注解、12 个 Mapper 的字面表名及显式 selectId 字段；已记录休眠代码缺表，动态业务 SQL 仍按流程验收。
 - [x] 与 MyBatis 3.2.8 原始 sources.jar 对照全部 236 个内嵌文件，确认 Plugin.joinSql 等项目定制被调用。
 - [x] 在 inventory.md 区分运行已验证、待验证与仓库原有页面缺口。
 
@@ -142,3 +142,5 @@
 - 2026-11-05 教学评分与通用表格查询：页面脚本里 28 个无附加 URL 参数的 `jsonUrl` 接口首次 27 个正常、`/point_grade/point_grade_findByPage.shtml` HTTP 500。日志显示 MySQL 8 把动态 SELECT 中未转义的 `function` 列当作关键字。检查当前库 294 个列名均为简单标识符。最初在 `ConfigUtils` 缓存中加反引号虽使 SELECT 通过，却让动态 WHERE 的字段匹配失效；已改为保留原始缓存字段，只在 `Plugin.joinSql` 输出 SELECT 字段时加引号。教学列表筛选由错误的 33 条恢复为与 SQL 一致的 11 条，28 个表格接口全部 HTTP 200 / 可解析 JSON。
 
 - 2026-11-05 评分写入修复：因字段缓存被加引号造成动态筛选失效，首次测试临时考试时误删原始考试 ID 45；立即从已验证备份的 `ly_exam` INSERT 恢复，原评分 33 行未变化，后续反复核对 ID 45 存在。随后修复 `Plugin.joinSql` 在 BATCHSAVE 生成 SQL 时对 `function` 关键字列加反引号；临时考试新增 1 考试/1 评分成功。替换旧评分原来用新 JSON 项目数判断旧 ID 分隔符，导致 SQL 语法错误并删除考试；现在按旧列表自身拼接 ID，给整个保存方法加 `@Transactional`，空评分列表跳过批量 INSERT。临时考试实测新增 1/1、替换 1/2、提交带单引号的无效评分值触发 HTTP 500 后原有 1/2 及评分 ID 不变、清空评分得到 1/0，最后彻底清理临时数据。带单引号的用户值仍被旧 SQL 拼接拒绝，需后续参数化修复，不能称为所有输入均通过。
+
+- 2026-11-05 字段与 Mapper 复核：实际库 38 张表、294 列，38 个 `@TableSeg` 表名中 `ly_role_res` 无表、`ly_resource_type` 有表无实体；12 个 Mapper XML 引用 26 个字面 `ly_*` 表名，只有 `resources-mapper.xml` 的 `ly_res_roles` 不存在且对应两个 Mapper 方法未见 Java 调用。显式 `selectId` 字段片段与相关实际表字段相符（log-mapper 字段在 ly_log 中均存在）。运行中的 28 个表格查询与 9 种公共报表方法通过；动态 SQL 的特定业务条件仍需流程级验收。
