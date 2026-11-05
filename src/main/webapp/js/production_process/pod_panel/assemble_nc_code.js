@@ -14,7 +14,7 @@ function recode(){
 	$.ajax({ 
 		type: 'POST', 
 		data: data+'&'+data2, 
-		url: '/IE-MES/produce/recode_nccode_methods.shtml',
+		url: (typeof rootPath === 'string' ? rootPath : '') + '/produce/recode_nccode_methods.shtml',
         success: function (e) {
         	var data= JSON.parse(e);
 			data = eval('(' + data + ')');

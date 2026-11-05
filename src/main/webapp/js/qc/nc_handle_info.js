@@ -7,7 +7,7 @@ function handle(){
 	$.ajax({ 
 		type: 'POST', 
 		data: {'sfc':sfc,'radio':radio,'remarks':remarks_input,'operation':operation}, 
-		url: '/IE-MES/qc/addNcHandleMsg.shtml',
+		url: (typeof rootPath === 'string' ? rootPath : '') + '/qc/addNcHandleMsg.shtml',
 		success: function (e) {
 			var data= JSON.parse(e);
 			data = eval('(' + data + ')');

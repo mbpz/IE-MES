@@ -103,7 +103,7 @@
 		$.ajax({
 			type : 'POST',
 			data : data,
-			url : '/IE-MES/capacity_report/getReportData.shtml',
+			url : '${pageContext.request.contextPath}/capacity_report/getReportData.shtml',
 			success : function(e) {
 				var data = JSON.parse(e);
 				if (data.result) {

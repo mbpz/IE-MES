@@ -24,12 +24,20 @@
 	<!--避免IE执行AJAX时，返回JSON出现下载文件 -->
 	<bean id="mappingJackson2HttpMessageConverter"
 		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="objectMapper" ref="iemesObjectMapper" />
 		<property name="supportedMediaTypes">
 			<list>
 				<value>text/html;charset=UTF-8</value>
 				<value>text/json;charset=UTF-8</value>
 				<value>application/json;charset=UTF-8</value>
 			</list>
+		</property>
+	</bean>
+	<bean id="iemesObjectMapper" class="com.iemes.util.IemesObjectMapper">
+		<property name="dateFormat">
+			<bean class="java.text.SimpleDateFormat">
+				<constructor-arg type="java.lang.String" value="yyyy-MM-dd HH:mm:ss" />
+			</bean>
 		</property>
 	</bean>
 	<!-- 采用SpringMVC自带的JSON转换工具，支持@ResponseBody注解 -->
@@ -54,15 +62,7 @@
 		<mvc:message-converters>
 			<bean
 				class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
-				<property name="objectMapper">
-					<bean class="com.fasterxml.jackson.databind.ObjectMapper">
-						<property name="dateFormat">
-							<bean class="java.text.SimpleDateFormat">
-								<constructor-arg type="java.lang.String" value="yyyy-MM-dd HH:mm:ss" />
-							</bean>
-						</property>
-					</bean>
-				</property>
+				<property name="objectMapper" ref="iemesObjectMapper" />
 			</bean>
 		</mvc:message-converters>
 	</mvc:annotation-driven>

@@ -79,7 +79,7 @@ function unfinish_workshop_ok(){
 	$.ajax({
 		type: 'POST', 
 		data: data, 
-		url: '/IE-MES/plan/getShoporderInfoByNo.shtml',
+		url: rootPath + '/plan/getShoporderInfoByNo.shtml',
 		success: function (e) {
 			var data= JSON.parse(e);
 			if (data.result) {

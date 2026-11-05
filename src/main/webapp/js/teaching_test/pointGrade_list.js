@@ -80,13 +80,13 @@ $(function() {
 		$.ajax({
 			type : 'POST',
 			data : parames_data,
-			url : '/IE-MES/point_grade/point_grade_update_all.shtml',
+			url : rootPath + '/point_grade/point_grade_update_all.shtml',
 			success : function(e) {
 				var data = $.parseJSON(e);
 				if (data.result) {
 					layer.msg(data.message);
 					//同步加载
-					var url = '/IE-MES/point_grade/putScore.shtml';
+					var url = rootPath + '/point_grade/putScore.shtml';
 					var s = CommnUtil.ajax(url,{
 						'exam_no':v
 					},"json");
@@ -135,7 +135,7 @@ function exam_confirm(exam_no,exam_name,exam_start_time,exam_end_time,enabled,v)
 	
 	
 	//同步加载
-	var url = '/IE-MES/point_grade/putScore.shtml';
+	var url = rootPath + '/point_grade/putScore.shtml';
 	var s = CommnUtil.ajax(url,{
 		'exam_no':v
 	},"json");

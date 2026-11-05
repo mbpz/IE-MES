@@ -13,7 +13,7 @@ function getData(){
 	$.ajax({
 		type: 'POST', 
 		data: data, 
-		url: '/IE-MES/report/getReportData.shtml',
+		url: '${pageContext.request.contextPath}/report/getReportData.shtml',
         success: function (e) {
         	var data= JSON.parse(e);
         	if (data.result) {

@@ -6,7 +6,7 @@
 <head>
 <meta charset="utf-8">
 <script type="text/javascript"
-	src="${ctx}/IE-MES/js/qc/nc_handle_info.js"></script>
+	src="${pageContext.request.contextPath}/js/qc/nc_handle_info.js"></script>
 <title>nc_handle</title>
 </head>
 <c:if test="${exist==true }">

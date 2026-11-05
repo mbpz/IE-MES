@@ -8,7 +8,7 @@
 	<div class="contentPanel">
 		<div class="m-b-md" style="margin: 10px">
 			<form id="form" name="form" class="form-horizontal" method="post"
-				action="${ctx}/IE-MES/plan/shoporderIssued.shtml">
+				action="${pageContext.request.contextPath}/plan/shoporderIssued.shtml">
 				<div class="panel-body">
 					<div class="panel panel-default">
 						<div class="panel-heading">

@@ -56,7 +56,7 @@
 		$.ajax({
 					type : 'POST',
 					data : "",
-					url : '/IE-MES/produce/getScoreInfo.shtml',
+					url : '${pageContext.request.contextPath}/produce/getScoreInfo.shtml',
 					success : function(e) {
 						var data = JSON.parse(e);
 						if (data.result) {

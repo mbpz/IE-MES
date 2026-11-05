@@ -41,8 +41,29 @@ $(function() {
 	});
 	$("#material_table tr th").css({"color":"white","background-color":"red","font-size":"25px"});
 	$("#material_table tr td").css({"color":"white","background-color":"black","font-size":"25px"});
-	setInterval("updateData()",10000);
-	setInterval("updateTime()",1000);
+	if (window.materialConsumptionRefreshTimers) {
+		clearInterval(window.materialConsumptionRefreshTimers.data);
+		clearInterval(window.materialConsumptionRefreshTimers.time);
+	}
+	var dataTimer = setInterval(function() {
+		if (!document.getElementById('material_table')) {
+			clearInterval(dataTimer);
+			clearInterval(timeTimer);
+			window.materialConsumptionRefreshTimers = null;
+			return;
+		}
+		updateData();
+	}, 10000);
+	var timeTimer = setInterval(function() {
+		if (!document.getElementById('material_table')) {
+			clearInterval(dataTimer);
+			clearInterval(timeTimer);
+			window.materialConsumptionRefreshTimers = null;
+			return;
+		}
+		updateTime();
+	}, 1000);
+	window.materialConsumptionRefreshTimers = {data: dataTimer, time: timeTimer};
 });
 
 function p(s) {
@@ -50,6 +71,7 @@ function p(s) {
 }
 
 function updateData(){
+	if (!document.getElementById('material_table')) return;
 	grid.loadData();
 	$("#material_table tr th").css({"color":"white","background-color":"red","font-size":"25px"});
 	$("#material_table tr td").css({"color":"white","background-color":"black","font-size":"25px"});

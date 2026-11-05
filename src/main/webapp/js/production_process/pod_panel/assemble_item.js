@@ -45,7 +45,7 @@ function fit_out(){
 	$.ajax({ 
 		type: 'POST', 
 		data: data, 
-		url: '/IE-MES/produce/fit_out.shtml',
+		url: (typeof rootPath === 'string' ? rootPath : '') + '/produce/fit_out.shtml',
         success: function (e) {
         	
         	var data= JSON.parse(e);

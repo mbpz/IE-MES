@@ -4,7 +4,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<script type="text/javascript" src="${ctx}/IE-MES/js/qc/nc_handle.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/qc/nc_handle.js"></script>
 <title>nc_handle</title>
 </head>
 <body id="report_test_body" style="height: 100%; margin: 0">

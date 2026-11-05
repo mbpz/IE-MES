@@ -142,7 +142,7 @@ function tableAddLine(){
 		var $by_user;
 		
 		//同步加载
-		var url = '/IE-MES/workshop_inventory/workshop_inventory_getItemInfo2.shtml';
+		var url = rootPath + '/workshop_inventory/workshop_inventory_getItemInfo2.shtml';
 		var s = CommnUtil.ajax(url,{
 			'item':$('#item').val(),
 			'site':$('#site').val()

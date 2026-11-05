@@ -47,7 +47,7 @@ function assemblingStart(){
 	$.ajax({ 
 		type: 'POST', 
 		data: data, 
-		url: '/IE-MES/produce/assemblingStartValadata.shtml',
+		url: rootPath + '/produce/assemblingStartValadata.shtml',
 		success: function (e) {
 			var data= JSON.parse(e);
 			data = eval('(' + data + ')');
@@ -81,7 +81,7 @@ function assemblingFinish(){
 	$.ajax({ 
 		type: 'POST', 
 		data: data, 
-		url: '/IE-MES/produce/process_finish.shtml',
+		url: rootPath + '/produce/process_finish.shtml',
 		success: function (e) {
 			var data= JSON.parse(e);
 			data = eval('(' + data + ')');
@@ -146,7 +146,7 @@ function recode_nccode_ui(){
 	var workorder = $('#workorder_input').val();
 	
 	//同步加载
-	var url = '/IE-MES/produce/isInProduction.shtml';
+	var url = rootPath + '/produce/isInProduction.shtml';
 	var s = CommnUtil.ajax(url,{
 		'sfc':sfc,
 		'operation':operation,
@@ -171,7 +171,7 @@ function findButton(operation_no){
 	$('#button_active').empty();
 
 	//同步加载
-	var url = '/IE-MES/produce/operation_input_changed.shtml';
+	var url = rootPath + '/produce/operation_input_changed.shtml';
 	var s = CommnUtil.ajax(url,{
 		'operationNo':operation_no
 	},"json");
@@ -191,7 +191,7 @@ function findButton(operation_no){
 	  $.ajax({ 
 		type: 'POST',
 		data: {'operationNo':operation_no}, 
-		url: '/IE-MES/produce/operation_input_changed.shtml',
+		url: rootPath + '/produce/operation_input_changed.shtml',
 		success: function (e) {
 			var data= JSON.parse(e);
 			var jsonData = data.data;

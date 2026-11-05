@@ -4,8 +4,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
-<!-- <script type="text/javascript" src="${ctx}/IE-MES/js/jquery/jquery-1.8.3.js"></script> -->
-<script type="text/javascript" src="${ctx}/IE-MES/js/popup/shoporder_Issued.js"></script>
+<!-- <script type="text/javascript" src="${pageContext.request.contextPath}/js/jquery/jquery-1.8.3.js"></script> -->
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/popup/shoporder_Issued.js"></script>
 <style type="text/css">
 .col-sm-8 {
 	width: 70%;
@@ -20,7 +20,7 @@ label[class^="btn btn-default"] {
 <body>
 	<div class="l_err" style="width: 100%; margin-top: 2px;"></div>
 	<form id="form" name="form" class="form-horizontal" method="post"
-		action="${ctx}/IE-MES/plan/shoporderIssued.shtml">
+		action="${pageContext.request.contextPath}/plan/shoporderIssued.shtml">
 		<div class="panel-body">
 			<div class="panel panel-default">
 				<div class="panel-heading">
