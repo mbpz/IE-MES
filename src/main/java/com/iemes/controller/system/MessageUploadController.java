@@ -25,6 +25,8 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -95,6 +97,7 @@ public class MessageUploadController extends BaseController {
 	 */
 	@RequestMapping("studentInfoUpload")
 	@ResponseBody
+	@Transactional(readOnly = false)
 	public BaseResponse studentInfoUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
 		if (file == null || file.isEmpty()) {
@@ -104,7 +107,13 @@ public class MessageUploadController extends BaseController {
 		try (InputStream input = file.getInputStream()) {
 			getUserAndRoleByExcel(input);
 		} catch (InvalidFormatException | IllegalArgumentException e) {
-			baseResponse.setMessage("Excel 文件格式不正确");
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			baseResponse.setMessage("Excel 文件或数据格式不正确");
+			baseResponse.setResult(false);
+			return baseResponse;
+		} catch (Exception e) {
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			baseResponse.setMessage("导入失败，请检查工作簿数据");
 			baseResponse.setResult(false);
 			return baseResponse;
 		}
@@ -160,8 +169,11 @@ public class MessageUploadController extends BaseController {
 					try {
 						List<UserFormMap>  tempUserList  = userMapper.findUserPage(user);
 						if(null == tempUserList || tempUserList.size() == 0){
-							baseMapper.addEntity(user);
 							List<RoleFormMap> roleList =  roleMapper.findByAttribute("name", roleName, RoleFormMap.class);
+						if (CollectionUtils.isEmpty(roleList)) {
+							throw new IllegalArgumentException("用户表第 " + (i + 1) + " 行的角色不存在");
+						}
+						baseMapper.addEntity(user);
 							Long roleId = Long.parseLong(roleList.get(0).get("id").toString());
 							UserGroupsFormMap userGroupsFormMap = new UserGroupsFormMap();
 							userGroupsFormMap.put("userId", user.get("id"));
@@ -169,7 +181,7 @@ public class MessageUploadController extends BaseController {
 							baseMapper.addEntity(userGroupsFormMap);
 						};
 					} catch (Exception e) {
-						e.printStackTrace();
+						throw new IllegalStateException("用户表第 " + (i + 1) + " 行导入失败", e);
 					}
 
 				}
@@ -263,6 +275,7 @@ public class MessageUploadController extends BaseController {
 	 */
 	@RequestMapping("masterDataUpload")
 	@ResponseBody
+	@Transactional(readOnly = false)
 	public BaseResponse masterDataUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
 		if (file == null || file.isEmpty()) {
@@ -272,7 +285,13 @@ public class MessageUploadController extends BaseController {
 		try (InputStream input = file.getInputStream()) {
 			getMasterDataByExcel(input);
 		} catch (InvalidFormatException | IllegalArgumentException e) {
-			baseResponse.setMessage("Excel 文件格式不正确");
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			baseResponse.setMessage("Excel 文件或数据格式不正确");
+			baseResponse.setResult(false);
+			return baseResponse;
+		} catch (Exception e) {
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+			baseResponse.setMessage("导入失败，请检查工作簿数据");
 			baseResponse.setResult(false);
 			return baseResponse;
 		}
@@ -350,21 +369,13 @@ public class MessageUploadController extends BaseController {
 						workCenterFormMap.put("workcenter_type", workcenter_type);
 						workCenterFormMap.put("state", state);
 						workCenterFormMap.put("byUser", byUser);
-						try {
-							baseMapper.addEntity(workCenterFormMap);
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
+						baseMapper.addEntity(workCenterFormMap);
 						if(!StringUtils.isEmpty(workcenter_parent)){
 							WorkCenterRelationFormMap  workCenterRelationFormMap = new WorkCenterRelationFormMap();
 							workCenterRelationFormMap.put("workcenter", workcenter_parent);
 							workCenterRelationFormMap.put("workcenter_child", workcenter_no);
 							workCenterRelationFormMap.put("site", site);
-							try {
-								baseMapper.addEntity(workCenterRelationFormMap);
-							} catch (Exception e) {
-								e.printStackTrace();
-							}
+							baseMapper.addEntity(workCenterRelationFormMap);
 						}
 
 					}
@@ -545,12 +556,7 @@ public class MessageUploadController extends BaseController {
 						routingFormMap.put("state", state);
 						routingFormMap.put("createUser", byUser);
 						routingFormMap.put("data", data);
-						try {
-							baseMapper.addEntity(routingFormMap);
-						} catch (Exception e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
+						baseMapper.addEntity(routingFormMap);
 					}
 				}
 			}
