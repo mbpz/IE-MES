@@ -486,3 +486,27 @@
 ## 菜单与权限运行基线（2026-11-05）
 
 `ly_resources` 有 30 个 `type=1` 菜单项：26 个 `/...shtml` 页面入口在管理员会话中通过 GET 验证，其余 4 个是分组占位路径。Shiro 动态 `perms[resKey]` 规则需先于 `/** = authc`；已用无角色临时账号验证 `/role/list.shtml` 的拒绝内容、管理员页面仍可访问，并验证退出后重新受限。测试账号及其登录记录已删除。此清单仅证明页面入口与该权限例子，业务写入和每一项权限组合仍需逐项验收。
+
+
+## 现状核对摘要（2026-11-05）
+
+源码中有 40 个 `@Controller` 类、306 处 `@RequestMapping` 注解、120 个 JSP、12 个 Mapper XML、1 处 `@Scheduled`；当前初始化后数据库有 38 张表、111 条权限资源。这里的注解数包括类级映射，不等于可直接访问的独立 URL 数。外部运行依赖为 MySQL、SMTP 和旧 Sigar 工具代码；ARM64/Linux 定时告警已改用 JDK 管理接口，SMTP 在本地由 Mailpit 捕获。
+
+**已运行验证**：数据库初始化、管理员登录/退出、无角色用户越权拒绝、26 个页面型菜单入口、物料新增/删除、库存报表 JSON、工单日期、Excel 模板下载、中文文件名空模板上传、主数据单行导入、定时邮件告警及数据库记录、上传/配置卷保持、独立备份恢复及恢复应用健康。
+
+**仍待逐项验证**：BOM 与工艺路线编辑、计划订单生命周期、各生产工位操作、库存变更、质量与返修、教学评分、含真实用户数据的批量导入、各业务异常的回滚、IDEA GUI 内导入与附加调试。
+
+**仓库原有页面缺口**：下面 12 个 Controller 返回的 JSP 路径在当前仓库和 Git 历史中均不存在，管理员 GET 实测均为 HTTP 404。用户若有 Eclipse 工作区未提交的页面，需要以原文件恢复；仅凭相似文件名不能保证业务行为一致。
+
+- `/workshop/routing_designerUI.shtml` → `WEB-INF/jsp/process_designer/gooFlow/demo.jsp`
+- `/workshop/routing_editUI.shtml` → `WEB-INF/jsp/process_designer/gooFlow/routing_edit.jsp`
+- `/plan/deliver_number.shtml` → `WEB-INF/jsp/system/plan/deliver_number.jsp`
+- `/product_plan/shoporder_maintenance_editUI.shtml` → `WEB-INF/jsp/product_plan/shoporder_maintenance/shoporder_maintenance_edit.jsp`
+- `/plan/erp_order.shtml` → `WEB-INF/jsp/system/plan/erp_order.jsp`
+- `/point_grade/point_grade_editUI.shtml` → `WEB-INF/jsp/teaching_test/pointGrade_list.jsp`
+- `/produce/repair_pod.shtml` → `WEB-INF/jsp/system/produce/repair_pod.jsp`
+- `/produce/package_pod.shtml` → `WEB-INF/jsp/system/produce/package_pod.jsp`
+- `/produce/sampling_pod.shtml` → `WEB-INF/jsp/system/produce/sampling_pod.jsp`
+- `/produce/sfc_step.shtml` → `WEB-INF/jsp/system/produce/sfc_step.jsp`
+- `/produce/equipment_testing_pod.shtml` → `WEB-INF/jsp/system/produce/equipment_testing_pod.jsp`
+- `/produce/visual_inspection_pod.shtml` → `WEB-INF/jsp/system/produce/visual_inspection_pod.jsp`
