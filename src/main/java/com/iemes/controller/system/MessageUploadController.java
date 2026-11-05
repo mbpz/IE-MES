@@ -28,6 +28,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
@@ -93,6 +94,7 @@ public class MessageUploadController extends BaseController {
 	 * @throws Exception
 	 */
 	@RequestMapping("studentInfoUpload")
+	@ResponseBody
 	public BaseResponse studentInfoUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
 		String filename = file.getOriginalFilename();
@@ -282,6 +284,7 @@ public class MessageUploadController extends BaseController {
 	 * @throws Exception
 	 */
 	@RequestMapping("masterDataUpload")
+	@ResponseBody
 	public BaseResponse masterDataUpload(@RequestParam(value = "file", required = false) MultipartFile file) throws Exception{
 		BaseResponse baseResponse = new BaseResponse();
 		String filename = file.getOriginalFilename();

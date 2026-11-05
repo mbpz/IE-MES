@@ -18,7 +18,7 @@
 - [x] 检查并启动 OrbStack；orb start 返回 Docker engine is ready。
 - [x] 完成 WAR 构建并检查 classes、资源和 JSP（120 个 JSP，Spring/JDBC/Mapper 和定制 MyBatis 类存在）。
 - [x] 空数据库初始化成功：38 张表，111 条权限资源、9 个用户；管理员登录已验证。
-- [ ] 应用启动、登录和代表性读写流程通过。
+- [x] 应用启动、登录、菜单读取和物料新增/删除代表性写入流程通过。
 
 ## 3. 兼容性修复
 - [x] 固定构建插件、阿里云仓库和经验证的 JDK 8 / Maven 3.5.4、3.9.9 / Tomcat 9 / MySQL 8.0.44 版本。
@@ -124,3 +124,9 @@
 - 2026-11-05 MyBatis 原始源码差异：236 个内嵌文件中 198 个原样、18 个只有空白变化、20 个存在非空白变更；项目 `Plugin.joinSql` 不是上游 API，`PagePlugin` 运行时调用。详细见 inventory.md。
 
 - 2026-11-05 权限实测：数据库 30 个 type=1 菜单项中 26 个 `.shtml` 页面管理员 GET 均返回业务页面，4 个为分组占位路径。临时无角色账号在原配置下能看到 `/role/list.shtml`，定位 `spring-shiro.xml` 把 `/** = authc` 排在动态 `perms[...]` 之前；删除前置通配项，保留 `ChainDefinitionSectionMetaSource` 在末尾追加的兜底。修复后临时账号仍可登录但角色页呈现拒绝内容，账号和登录记录均已清理；管理员 26 个菜单页面仍全部可访问，退出后受保护页面回到登录页。
+
+- 2026-11-05 物料 CRUD 抽查：管理员 POST `/item_resource/item_addEntity.shtml` 返回成功，`ly_item` 出现 1 条临时物料；POST `/item_resource/item_deleteEntity.shtml` 返回 success，数据库该物料数归零。未将这次单记录写入扩展为所有业务流程或事务回滚的证明。
+
+- 2026-11-05 当前数据库结构复核：原 SQL 35 张表 + 补充 SQL 3 张表、38 个实体表注解；`ly_role_res` 注解无表、`ly_resource_type` 有表无注解，`ly_res_roles` 只在未见调用的旧 Mapper 语句中。详情见 database-gaps.md；列级业务映射仍待逐项核对。
+
+- 2026-11-05 Excel 导入端点：用两份中文文件名、仅有表头的工作簿（用户 1 Sheet、主数据 8 Sheet）登录后 POST 到 `/message/studentInfoUpload.shtml` 与 `/message/masterDataUpload.shtml`。修复前两者均执行到容器临时文件写入但最终 HTTP 404；缺少 `@ResponseBody`。补注解后两者均 HTTP 200、JSON `result=true`，`ly_user`/`ly_item`/`ly_workcenter`/`ly_process_route` 行数不变，临时文件已清理。含真实数据行的导入和错误提示行为仍待验证；代码当前在容器 CWD 留下上传原文件，不在持久化卷。
