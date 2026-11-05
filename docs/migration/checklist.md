@@ -138,3 +138,5 @@
 - 2026-11-05 静态与运行页面基线：40 个 Controller、306 处 RequestMapping 注解、120 个 JSP、12 个 Mapper XML、1 个 Scheduled、38 张初始化表、111 条权限资源。12 处固定 JSP 返回路径缺文件，管理员 GET 均 HTTP 404；`git rev-list --all --objects` 未发现对应历史 JSP。详见 inventory.md。
 
 - 2026-11-05 报表兼容性：`ReportController.getReportData` 的 9 个 reportMethod 中，首次 `getScheduleReportData`（即使用有效工单号 gd01）返回 500，日志为数据库用户对硬编码 `iemes.ly_shoporder_sfc` 的 SELECT 拒绝。`report-mapper.xml` 共 21 处 `iemes.ly_*` 前缀改为当前 JDBC 库内相对表名；Docker 重建后 9 种查询均 HTTP 200 / JSON result=true，调度报表返回 12 条。看板与教学交互仍需单独验收。
+
+- 2026-11-05 教学评分与通用表格查询：页面脚本里 28 个无附加 URL 参数的 `jsonUrl` 接口首次 27 个正常、`/point_grade/point_grade_findByPage.shtml` HTTP 500。日志显示 MySQL 8 把动态 SELECT 中未转义的 `function` 列当作关键字。检查当前库 294 个列名均为简单标识符；`ConfigUtils` 缓存 SELECT 字段清单时逐列加反引号。Docker 重建后教学评分列表 HTTP 200 / JSON 5 条，28 个表格接口全部 HTTP 200 / 可解析 JSON。教学评分的修改与考试流程仍待验收。

@@ -37,3 +37,7 @@
 ## 报表旧库名前缀
 
 `report-mapper.xml` 原有 21 处 `iemes.ly_*` 固定库名前缀，与当前初始化库 `iemes_v1` 不一致，曾使调度报表返回 500（SELECT 权限错误）。已改为不带库名的表引用，九种公共报表查询在当前 Docker 库中均返回成功 JSON。
+
+## MySQL 8 关键字列
+
+`ly_teaching_testinfo.function` 在原 MyBatis 动态 SELECT 字段清单中未加引号，导致教学评分列表 HTTP 500。已在 `ConfigUtils` 对从 `information_schema.columns` 获取的简单列名逐一加反引号；当前 294 个列名符合简单标识符形式，修复后 28 个表格数据接口均返回成功 JSON。写入路径仍待独立业务验证。
