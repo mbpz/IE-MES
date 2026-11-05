@@ -510,3 +510,8 @@
 - `/produce/sfc_step.shtml` → `WEB-INF/jsp/system/produce/sfc_step.jsp`
 - `/produce/equipment_testing_pod.shtml` → `WEB-INF/jsp/system/produce/equipment_testing_pod.jsp`
 - `/produce/visual_inspection_pod.shtml` → `WEB-INF/jsp/system/produce/visual_inspection_pod.jsp`
+
+
+**额外页面缺口**：`WEB-INF/jsp/qc/nc_handle_info.jsp` 虽存在，运行时返回的 HTML 只有脚本引用和空页面骨架；隔离环境中的维修 API 可写入记录，但此详情页无法展示不良内容及处置控件。需核对原 Eclipse 工作区是否有更完整版本。
+
+**MyBatis 运行约束**：`PagePlugin` 在 StatementHandler.prepare 才替换通用 Mapper SQL，而 MyBatis 会话缓存键已按替换前 SQL 生成；同一事务内多个 `findByNames` 调用可能错误复用不同表的结果。现由 `mybatis-config.xml` 将 localCacheScope 设为 STATEMENT，已用隔离两步工单终结与 28 个表格/9 种报表接口复验。

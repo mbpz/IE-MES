@@ -53,7 +53,16 @@ public class FormMap<K, V> extends HashMap<K, V> implements Serializable  {
 	 * Get attribute of mysql type: date, year
 	 */
 	public java.util.Date getDate(String attr) {
-		return (java.util.Date) this.get(attr);
+		Object value = this.get(attr);
+		if (value instanceof java.time.LocalDateTime) {
+			return java.util.Date.from(((java.time.LocalDateTime) value)
+					.atZone(java.time.ZoneId.systemDefault()).toInstant());
+		}
+		if (value instanceof java.time.LocalDate) {
+			return java.util.Date.from(((java.time.LocalDate) value)
+					.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant());
+		}
+		return (java.util.Date) value;
 	}
 
 	/**

@@ -36,8 +36,6 @@ public class ShoporderMakeController extends BaseController {
 	@Inject
 	private ShopOrderLssuedService shopOrderLssuedService;
 
-	SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
 	// 订单下达菜单跳转
 	@RequestMapping("shoporder_Issued")
 	public String shoporder_IssuedUI(Model model) throws Exception {
@@ -57,6 +55,12 @@ public class ShoporderMakeController extends BaseController {
 		BaseResponse response = new BaseResponse();
 		String shopOrderNo = getPara("shoporder_no");
 		ShopOrderFormMap shopOrderFormMap = baseMapper.findbyFrist("shoporder_no", shopOrderNo, ShopOrderFormMap.class);
+		if (shopOrderFormMap == null) {
+			response.setResult(false);
+			response.setMessage("未找到工单");
+			return response;
+		}
+		SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		Date startTime = shopOrderFormMap.getDate("shoporder_start_date");
 		Date endTime = shopOrderFormMap.getDate("shoporder_end_date");
 		shopOrderFormMap.put("shoporder_start_date", simpleDateFormat.format(startTime));

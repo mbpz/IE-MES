@@ -92,7 +92,7 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 		
 		ShopOrderFormMap shopOrderFormMap = new ShopOrderFormMap();
 		shopOrderFormMap.put("site", ShiroSecurityHelper.getSite());
-		shopOrderSfcFormMap.put("shoporder_no", shopOrder);
+		shopOrderFormMap.put("shoporder_no", shopOrder);
 		List<ShopOrderFormMap> shopOrderFormMapList = baseMapper.findByNames(shopOrderFormMap);
 		if (!ListUtils.isNotNull(shopOrderFormMapList)) {
 			throw new Exception("数据异常，未查询到该工单["+shopOrder+"]相关信息！！！");
@@ -185,7 +185,7 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 			ShopOrderSfcFormMap shopOrderSfcFormMap = new ShopOrderSfcFormMap(); 
 			shopOrderSfcFormMap.put("shoporderId", shoporder);
 			shopOrderSfcFormMap.put("site", ShiroSecurityHelper.getSite());
-			List<ShopOrderSfcFormMap> shopOrderSfcFormMapList = baseMapper.findByWhere(shopOrderSfcFormMap);
+			List<ShopOrderSfcFormMap> shopOrderSfcFormMapList = baseMapper.findByNames(shopOrderSfcFormMap);
 			if (!ListUtils.isNotNull(shopOrderSfcFormMapList)) {
 				throw new Exception("未找到当前SFC["+sfc+"]的详细信息！！！");
 			}
@@ -194,11 +194,10 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 			boolean isOver = true;
 			for (ShopOrderSfcFormMap formap : shopOrderSfcFormMapList) {
 				int status = formap.getInt("status");
-				if (status!=2 && status!=3) {
-					isOver = false;
-				}
 				if (sfc.equals(formap.getStr("sfc"))) {
 					shopOrderSfcFormMap = formap;
+				} else if (status!=2 && status!=3) {
+					isOver = false;
 				}
 			}
 			if (shopOrderSfcFormMap==null) {
