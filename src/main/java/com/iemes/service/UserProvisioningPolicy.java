@@ -36,13 +36,17 @@ public class UserProvisioningPolicy {
     }
 
     public void requireAssignment(String site, List<String> roleIds) {
-        if (site == null || site.trim().isEmpty()) throw new IllegalArgumentException("站点不能为空");
-        if (!isGlobalAdmin() && !site.equals(currentSite())) {
+        if (!canAssignSite(site)) {
             throw new IllegalArgumentException("不能为其他站点分配用户");
         }
         for (String roleId : roleIds) {
             if (!canAssignRole(roleId)) throw new IllegalArgumentException("不能分配该角色");
         }
+    }
+
+    public boolean canAssignSite(String site) {
+        return site != null && !site.trim().isEmpty()
+                && (isGlobalAdmin() || site.equals(currentSite()));
     }
 
     public boolean canAssignRole(String roleId) {

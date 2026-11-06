@@ -107,10 +107,13 @@ public class RoleController extends BaseController {
 		}
 		RoleFormMap roleFormMap = getFormMap(RoleFormMap.class);
 		Object userId = roleFormMap.get("userId");
+		RoleFormMap availableRoles = new RoleFormMap();
 		if(null!=userId){
 			if (!userProvisioningPolicy.canManageUser(userId.toString())) return "redirect:/denied.jsp";
+			RoleFormMap selectedUser = new RoleFormMap();
+			selectedUser.put("userId", userId);
 			List<RoleFormMap> list = new ArrayList<RoleFormMap>();
-			for (RoleFormMap role : roleMapper.seletUserRole(roleFormMap)) {
+			for (RoleFormMap role : roleMapper.seletUserRole(selectedUser)) {
 				if (userProvisioningPolicy.canAssignRole(role.get("id").toString())) list.add(role);
 			}
 			String ugid = "";
@@ -121,10 +124,10 @@ public class RoleController extends BaseController {
 			model.addAttribute("txtRoleSelect", ugid);
 			model.addAttribute("userRole", list);
 			if(StringUtils.isNotBlank(ugid)){
-				roleFormMap.put("where", " where id not in ("+ugid+")");
+				availableRoles.put("where", " where id not in ("+ugid+")");
 			}
 		}
-		List<RoleFormMap> roles = roleMapper.findByWhere(roleFormMap);
+		List<RoleFormMap> roles = roleMapper.findByWhere(availableRoles);
 		Iterator<RoleFormMap> iterator = roles.iterator();
 		while (iterator.hasNext()) {
 			RoleFormMap role = iterator.next();

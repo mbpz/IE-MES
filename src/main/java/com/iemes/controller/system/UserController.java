@@ -2,6 +2,7 @@ package com.iemes.controller.system;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -107,10 +108,16 @@ public class UserController extends BaseController {
 
 	@RequestMapping("addUI")
 	public String addUI(Model model,HttpServletRequest request) throws Exception {
-		SiteFormMap siteFormMap = getFormMap(SiteFormMap.class);
-		List<SiteFormMap> siteList = siteMapper.findByWhere(siteFormMap);
-		request.setAttribute("siteInfo", siteList);
+		request.setAttribute("siteInfo", assignableSites());
 		return Common.BACKGROUND_PATH + "/system/user/add";
+	}
+
+	private List<SiteFormMap> assignableSites() {
+		List<SiteFormMap> sites = new ArrayList<SiteFormMap>();
+		for (SiteFormMap site : siteMapper.findByWhere(new SiteFormMap())) {
+			if (userProvisioningPolicy.canAssignSite(site.getStr("site"))) sites.add(site);
+		}
+		return sites;
 	}
 
 	@ResponseBody
@@ -174,9 +181,7 @@ public class UserController extends BaseController {
 		if(Common.isNotEmpty(id)){
 			model.addAttribute("user", userMapper.findbyFrist("id", id, UserFormMap.class));
 		}
-		SiteFormMap siteFormMap = getFormMap(SiteFormMap.class);
-		List<SiteFormMap> siteList = siteMapper.findByWhere(siteFormMap);
-		request.setAttribute("siteInfo", siteList);
+		request.setAttribute("siteInfo", assignableSites());
 		return Common.BACKGROUND_PATH + "/system/user/edit";
 	}
 
