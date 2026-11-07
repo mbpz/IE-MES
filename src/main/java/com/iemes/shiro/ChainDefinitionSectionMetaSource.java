@@ -160,8 +160,8 @@ public class ChainDefinitionSectionMetaSource implements FactoryBean<Ini.Section
 
 		section.put("/product_plan/shoporder_maintenance_add*.shtml", "perms[add_shoporder]");
 		section.put("/product_plan/**", "perms[shoporder_make]");
-		section.put("/plan/deliver_number*.shtml", "perms[product_plan]");
-		section.put("/plan/erp_order*.shtml", "perms[product_plan]");
+		section.put("/plan/deliver_number*.shtml", "perms[deliver_number]");
+		section.put("/plan/erp_order*.shtml", "perms[erp_order]");
 		section.put("/plan/**", "perms[shoporder_Issued]");
 		section.put("/report/scheduler_reportUi*.shtml", "perms[scheduler_report]");
 		section.put("/report/inventory_reportUi*.shtml", "perms[in_inventory_report]");
