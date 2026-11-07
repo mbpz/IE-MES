@@ -21,7 +21,7 @@
 <script type="text/javascript" src="../jquery.min.js"></script>
 <script type="text/javascript" src="../GooFunc.js"></script>
 <script type="text/javascript" src="../json2.js"></script>
-<script src="/IE-MES/js/layer-v1.9.2/layer/layer.js"></script>
+<script src="../../js/layer-v1.9.2/layer/layer.js"></script>
 <link rel="stylesheet" type="text/css" href="../default.css"/>
 <script type="text/javascript" src="codebase/GooFlow.js"></script>
 <script type="text/javascript">
@@ -65,10 +65,10 @@ $(document).ready(function(){
 			return false;
 		}
 		
-		$.ajax({ type: 'POST', data: "process_route="+$('#process_route').val(), url: '/IE-MES/workshop/routing_isExist.shtml',
+		$.ajax({ type: 'POST', data: "process_route="+$('#process_route').val(), url: '../../workshop/routing_isExist.shtml',
 	        success: function (data) {
 	        	if (data=="true"){
-	        		 $.ajax({ type: 'POST', data: $("form").serialize(), url: '/IE-MES/workshop/routing_addEntity.shtml',
+				$.ajax({ type: 'POST', data: $("form").serialize(), url: '../../workshop/routing_addEntity.shtml',
 		     	        success: function () {
 		     	        	parent.grid.loadData();
 		     	        	var index = parent.layer.getFrameIndex(window.name); //获取窗口索引  

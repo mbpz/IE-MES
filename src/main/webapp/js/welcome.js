@@ -227,8 +227,8 @@ $(document).ready(function() {
 		success : function(e) {
 			var data = JSON.parse(e);
 			var jsonData = data.data;
+			var newoption = myChart3.getOption();
 			if (data.result) {
-				var newoption = myChart3.getOption();
 				var legend_data = [];
 				var serie_data = [];
 				for (var i = 0;i<jsonData.length;i++) {
@@ -240,6 +240,8 @@ $(document).ready(function() {
 				}
 				newoption.series[0].data = serie_data;
 				newoption.legend[0].data = legend_data;
+			} else {
+				newoption.title[0].subtext = '无库存报表权限';
 			}
 			myChart3.hideLoading();
 			myChart3.setOption(newoption);

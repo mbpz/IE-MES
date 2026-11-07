@@ -90,10 +90,15 @@ public class ShoporderMaintenanceController extends BaseController {
 	@RequestMapping("shoporder_maintenance_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			model.addAttribute("shopOrder", baseMapper.findbyFrist("id", id, ShopOrderFormMap.class));
+		if (Common.isNotEmpty(id)) {
+			ShopOrderFormMap shopOrder = baseMapper.findbyFrist("id", id, ShopOrderFormMap.class);
+			String site = String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+			if (shopOrder != null && site.equals(shopOrder.getStr("site"))) {
+				model.addAttribute("shopOrder", shopOrder);
+				return Common.BACKGROUND_PATH + "/product_plan/shoporder_maintenance/shoporder_maintenance_edit";
+			}
 		}
-		return Common.BACKGROUND_PATH + "/product_plan/shoporder_maintenance/shoporder_maintenance_edit";
+		return "redirect:/denied.jsp";
 	}
 	
 	@ResponseBody
@@ -102,7 +107,24 @@ public class ShoporderMaintenanceController extends BaseController {
 	@SystemLog(module="生产计划管理",methods="计划订单维护-编辑订单")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
 		ShopOrderFormMap shopOrderFormMap = getFormMap(ShopOrderFormMap.class);
-		baseMapper.editEntity(shopOrderFormMap);
+		String id = shopOrderFormMap.getStr("id");
+		if (Common.isEmpty(id)) {
+			return "error";
+		}
+		ShopOrderFormMap existing = baseMapper.findbyFrist("id", id, ShopOrderFormMap.class);
+		String site = String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+		if (existing == null || !site.equals(existing.getStr("site"))) {
+			return "error";
+		}
+		ShopOrderFormMap update = new ShopOrderFormMap();
+		update.put("id", id);
+		for (String field : new String[] { "shoporder_no", "shoporder_numbers", "shoporder_item", "process_route",
+				"shoporder_start_date", "shoporder_end_date", "shoporder_status" }) {
+			if (shopOrderFormMap.containsKey(field)) {
+				update.put(field, shopOrderFormMap.get(field));
+			}
+		}
+		baseMapper.editEntity(update);
 		return "success";
 	}
 	

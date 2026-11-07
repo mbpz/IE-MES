@@ -21,7 +21,7 @@
 <script type="text/javascript" src="../jquery.min.js"></script>
 <script type="text/javascript" src="../GooFunc.js"></script>
 <script type="text/javascript" src="../json2.js"></script>
-<script src="/IE-MES/js/layer-v1.9.2/layer/layer.js"></script>
+<script src="../../js/layer-v1.9.2/layer/layer.js"></script>
 <link rel="stylesheet" type="text/css" href="../default.css"/>
 <script type="text/javascript" src="codebase/GooFlow.js"></script>
 <script type="text/javascript">
@@ -74,7 +74,7 @@ $(document).ready(function(){
 			return false;
 		}
 		
-	    $.ajax({ type: 'POST', data: $(this).serialize(), url: '/IE-MES/workshop/routing_editEntity.shtml',
+	    $.ajax({ type: 'POST', data: $(this).serialize(), url: '../../workshop/routing_editEntity.shtml',
 	        success: function () {
 	        	parent.grid.loadData();
 	        	var index = parent.layer.getFrameIndex(window.name); //获取窗口索引  
@@ -116,7 +116,7 @@ $(document).ready(function(){
 	var process_route = window.parent.grid.selectRow()[0].process_route;
 	var queryParam = {
 			"type": "get", 
-			"url": "/IE-MES/workshop/routing_queryData.shtml?process_route=" + process_route, 
+			"url": "../../workshop/routing_queryData.shtml?process_route=" + encodeURIComponent(process_route),
 			"success": onLoadSuccess, 
 			"error": onLoadError
 	};

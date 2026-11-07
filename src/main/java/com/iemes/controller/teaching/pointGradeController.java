@@ -93,7 +93,7 @@ public class pointGradeController extends BaseController {
 		if(Common.isNotEmpty(id)){
 			model.addAttribute("sukey", pointGradeMapper.findbyFrist("id", id, PointGradeFormMap.class));
 		}
-		return Common.BACKGROUND_PATH + "/teaching_test/pointGrade_list";
+		return Common.BACKGROUND_PATH + "/teaching_score/pointGrade_list";
 	}
 	
 

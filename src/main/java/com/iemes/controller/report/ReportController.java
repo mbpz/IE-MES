@@ -169,6 +169,21 @@ public class ReportController extends BaseController{
 		map.put("site", session.getAttribute("site"));
 		List<Map<String, Object>> list = null;
 		String reportMethod = formMap.getStr("reportMethod");
+		String requiredPermission = null;
+		if ("getInventoryData".equals(reportMethod)) {
+			requiredPermission = "in_inventory_report";
+		} else if ("getScheduleReportData".equals(reportMethod) || "getShoporderCercle".equals(reportMethod)) {
+			requiredPermission = "scheduler_report";
+		} else if ("getTestReportData".equals(reportMethod) || "getReverseTracingData".equals(reportMethod)
+				|| "getPercentData".equals(reportMethod)) {
+			requiredPermission = "report";
+		}
+		if (requiredPermission != null && !SecurityUtils.getSubject().isPermitted("report")
+				&& !SecurityUtils.getSubject().isPermitted(requiredPermission)) {
+			response.setResult(false);
+			response.setMessage("无报表访问权限");
+			return response;
+		}
 		if (reportMethod.equals("getTestReportData")) {
 			list = reportMapper.getTestReportData(map);
 		}

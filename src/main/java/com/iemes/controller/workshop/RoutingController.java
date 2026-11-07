@@ -75,7 +75,7 @@ public class RoutingController extends BaseController {
 	
 	@RequestMapping("routing_designerUI")
 	public String designer(Model model) throws Exception {
-		return Common.BACKGROUND_PATH + "/process_designer/gooFlow/demo";
+		return "redirect:/process_designer/gooFlow/routing_add.html";
 	}
 	
 	@ResponseBody
@@ -185,7 +185,7 @@ public class RoutingController extends BaseController {
 		if(Common.isNotEmpty(id)){
 			model.addAttribute("routing", routingMapper.findbyFrist("id", id, RoutingFormMap.class));
 		}
-		return Common.BACKGROUND_PATH + "/process_designer/gooFlow/routing_edit";
+		return "redirect:/process_designer/gooFlow/routing_edit.html";
 	}
 	
 	@ResponseBody

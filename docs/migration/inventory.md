@@ -498,6 +498,8 @@
 
 **仓库原有页面缺口**：下面 12 个 Controller 返回的 JSP 路径在当前仓库和 Git 历史中均不存在，管理员 GET 实测均为 HTTP 404。用户若有 Eclipse 工作区未提交的页面，需要以原文件恢复；仅凭相似文件名不能保证业务行为一致。
 
+2026-11-07 复核：用户确认没有原 Eclipse 工作区或备份。已用项目内可核对的实现恢复 4 个路由：`routing_designerUI` 与 `routing_editUI` 重定向到现存 GooFlow HTML，`shoporder_maintenance_editUI` 新建可提交的编辑 JSP 并加站点边界校验，`point_grade_editUI` 改指现存评分 JSP；隔离容器中四个页面均返回 HTTP 200，工单编辑接口本站点成功、跨站点拒绝。下面列表保留原始 12 项作为差异基线，尚余 8 项（两个计划占位入口、六个仅有视图返回的生产工位）仍缺原页面及相应交互实现，不能列为全功能验收完成。
+
 - `/workshop/routing_designerUI.shtml` → `WEB-INF/jsp/process_designer/gooFlow/demo.jsp`
 - `/workshop/routing_editUI.shtml` → `WEB-INF/jsp/process_designer/gooFlow/routing_edit.jsp`
 - `/plan/deliver_number.shtml` → `WEB-INF/jsp/system/plan/deliver_number.jsp`
