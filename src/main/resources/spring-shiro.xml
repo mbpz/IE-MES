@@ -80,7 +80,6 @@
     		/notebook/** = anon
     		/login.shtml = anon
 			/denied.jsp = anon
-			/install.shtml = anon
 			/uploadFile/** = anon
 			/css/** = anon
 			/js/** = anon

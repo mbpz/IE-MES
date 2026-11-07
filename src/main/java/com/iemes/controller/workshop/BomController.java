@@ -1,5 +1,6 @@
 package com.iemes.controller.workshop;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -113,16 +114,25 @@ public class BomController extends BaseController {
 	@RequestMapping("bom_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			BomFormMap bomFormMap = baseMapper.findbyFrist("id", id, BomFormMap.class);
-			model.addAttribute("bom", bomFormMap);
-			
-			ItemBomFormMap itemBomFormMap = new ItemBomFormMap();
-			itemBomFormMap.put("item_bom_no", bomFormMap.getStr("item_bom_no"));
-			List<ItemBomFormMap> itemBom = baseMapper.findByNames(itemBomFormMap);
-			model.addAttribute("item_bom", itemBom);
-		}
+		BomFormMap bomFormMap = findCurrentSiteBom(id);
+		if (bomFormMap == null) return "redirect:/denied.jsp";
+		model.addAttribute("bom", bomFormMap);
+		ItemBomFormMap itemBomFormMap = new ItemBomFormMap();
+		itemBomFormMap.put("item_bom_no", bomFormMap.getStr("item_bom_no"));
+		itemBomFormMap.put("site", currentSite());
+		List<ItemBomFormMap> itemBom = baseMapper.findByNames(itemBomFormMap);
+		model.addAttribute("item_bom", itemBom);
 		return Common.BACKGROUND_PATH + "/item_resource/bom/bom_edit";
+	}
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private BomFormMap findCurrentSiteBom(String id) {
+		if (Common.isEmpty(id)) return null;
+		BomFormMap bom = baseMapper.findbyFrist("id", id, BomFormMap.class);
+		return bom != null && currentSite().equals(bom.getStr("site")) ? bom : null;
 	}
 	
 	@ResponseBody
@@ -131,17 +141,28 @@ public class BomController extends BaseController {
 	@SystemLog(module="生产物料控制",methods="物料维护-修改物料清单")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity(HttpServletRequest request) throws Exception {
 		BomFormMap bomFormMap = getFormMap(BomFormMap.class);
-		baseMapper.editEntity(bomFormMap);
-		
-		//先删除
-		baseMapper.deleteByAttribute("item_bom_no", "'"+bomFormMap.getStr("item_bom_no")+"'", ItemBomFormMap.class);
-		
-		//再添加
-		String itemBomNo = request.getParameter("bomFormMap.item_bom_no");
+		BomFormMap existing = findCurrentSiteBom(bomFormMap.getStr("id"));
+		if (existing == null || !existing.getStr("item_bom_no").equals(bomFormMap.getStr("item_bom_no"))) return "error";
+		String itemBomNo = existing.getStr("item_bom_no");
 		String[] itemNoArr = request.getParameterValues("item_no_1");
 		String[] itemUseNumberArr = request.getParameterValues("item_use_number_1");
 		String[] itemBalanceUpArr = request.getParameterValues("item_balance_up_1");
 		String[] itemBalanceDownArr = request.getParameterValues("item_balance_down_1");
+		if (itemNoArr != null && (itemUseNumberArr == null || itemBalanceUpArr == null || itemBalanceDownArr == null
+				|| itemNoArr.length != itemUseNumberArr.length || itemNoArr.length != itemBalanceUpArr.length
+				|| itemNoArr.length != itemBalanceDownArr.length)) return "error";
+		BomFormMap update = new BomFormMap();
+		update.put("id", existing.get("id"));
+		for (String field : new String[] { "item_bom_name", "item_bom_desc", "state" }) {
+			if (bomFormMap.containsKey(field)) update.put(field, bomFormMap.get(field));
+		}
+		if (update.size() == 1) return "error";
+		baseMapper.editEntity(update);
+		ItemBomFormMap oldChildren = new ItemBomFormMap();
+		oldChildren.put("item_bom_no", "'" + itemBomNo + "'");
+		oldChildren.put("site", "'" + currentSite() + "'");
+		baseMapper.deleteByNames(oldChildren);
+		// 用服务器会话站点重建清单子项，不能信任表单中的 site。
 		if(null != itemNoArr ){
 			for(int i = 0 ;i<itemNoArr.length;i++){
 				ItemBomFormMap itemBomFormMap = new ItemBomFormMap();
@@ -150,7 +171,7 @@ public class BomController extends BaseController {
 				itemBomFormMap.put("use_number", itemUseNumberArr[i]);
 				itemBomFormMap.put("balance_up", itemBalanceUpArr[i]);
 				itemBomFormMap.put("balance_down", itemBalanceDownArr[i]);
-				itemBomFormMap.put("site", bomFormMap.getStr("site"));
+				itemBomFormMap.put("site", currentSite());
 				baseMapper.addEntity(itemBomFormMap);
 			}
 		}
@@ -163,13 +184,19 @@ public class BomController extends BaseController {
 	@SystemLog(module="生产物料控制",methods="物料维护-删除物料清单")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		List<BomFormMap> boms = new ArrayList<BomFormMap>();
 		for (String id : ids) {
-			BomFormMap bomFormMap = baseMapper.findbyFrist("id", id, BomFormMap.class);
-			String itemBomNo = bomFormMap.getStr("item_bom_no");
+			BomFormMap bom = findCurrentSiteBom(id);
+			if (bom == null) return "error";
+			boms.add(bom);
+		}
+		for (BomFormMap bom : boms) {
 			ItemBomFormMap itemBomFormMap = new ItemBomFormMap();
-			itemBomFormMap.put("item_bom_no", "'"+itemBomNo+"'");
+			itemBomFormMap.put("item_bom_no", "'" + bom.getStr("item_bom_no") + "'");
+			itemBomFormMap.put("site", "'" + currentSite() + "'");
 			baseMapper.deleteByNames(itemBomFormMap);
-			baseMapper.deleteByAttribute("id", id, BomFormMap.class);
+			baseMapper.deleteByAttribute("id", String.valueOf(bom.get("id")), BomFormMap.class);
 		}
 		return "success";
 	}

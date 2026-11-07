@@ -28,7 +28,7 @@ label[class^="btn btn-default"] {
 	<form id="form" name="form" class="form-horizontal" method="post"
 		action="${ctx}/item_resource/bom_editEntity.shtml">
 		<input type="hidden" class="form-control checkacc" value="${bom.id}"
-			name="itemFormMap.id" id="id">
+			name="bomFormMap.id" id="id">
 		<section class="panel panel-default">
 		<div class="panel-body">
 			<div class="form-group">
