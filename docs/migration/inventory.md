@@ -500,6 +500,8 @@
 
 2026-11-07 复核：用户确认没有原 Eclipse 工作区或备份。已用项目内可核对的实现恢复 4 个路由：`routing_designerUI` 与 `routing_editUI` 重定向到现存 GooFlow HTML，`shoporder_maintenance_editUI` 新建可提交的编辑 JSP 并加站点边界校验，`point_grade_editUI` 改指现存评分 JSP；隔离容器中四个页面均返回 HTTP 200，工单编辑接口本站点成功、跨站点拒绝。下面列表保留原始 12 项作为差异基线，尚余 8 项（两个计划占位入口、六个仅有视图返回的生产工位）仍缺原页面及相应交互实现，不能列为全功能验收完成。
 
+教学评分授权决定（2026-11-07）：查看与修改仅允许管理员。仓库没有教学专属资源键，Shiro Realm 原来也没有加载角色；现用 `ly_user_role` 关联的角色 ID 1 赋予 `admin`，对 `/point_grade/**` 和教学考试选择弹窗执行角色校验。隔离数据库中管理员可访问，普通无角色用户被拒绝；此验证不代表评分交互的所有业务分支均已验收。
+
 - `/workshop/routing_designerUI.shtml` → `WEB-INF/jsp/process_designer/gooFlow/demo.jsp`
 - `/workshop/routing_editUI.shtml` → `WEB-INF/jsp/process_designer/gooFlow/routing_edit.jsp`
 - `/plan/deliver_number.shtml` → `WEB-INF/jsp/system/plan/deliver_number.jsp`

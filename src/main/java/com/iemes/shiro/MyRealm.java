@@ -19,8 +19,10 @@ import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.util.ByteSource;
 
 import com.iemes.entity.ResFormMap;
+import com.iemes.entity.RoleFormMap;
 import com.iemes.entity.UserFormMap;
 import com.iemes.mapper.ResourcesMapper;
+import com.iemes.mapper.RoleMapper;
 import com.iemes.mapper.UserMapper;
 
 /**
@@ -38,6 +40,9 @@ public class MyRealm extends AuthorizingRealm {
 	@Inject
 	private UserMapper userMapper;
 
+	@Inject
+	private RoleMapper roleMapper;
+
 	/**
 	 * 只有需要验证权限时才会调用, 授权查询回调函数, 进行鉴权但缓存中无用户的授权信息时调用.在配有缓存的情况下，只加载一次.
 	 */
@@ -49,6 +54,13 @@ public class MyRealm extends AuthorizingRealm {
 			List<ResFormMap> rs = resourcesMapper.findUserResourcess(userId);
 			// 权限信息对象info,用来存放查出的用户的所有的角色（role）及权限（permission）
 			SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
+			RoleFormMap roleQuery = new RoleFormMap();
+			roleQuery.put("userId", userId);
+			for (RoleFormMap role : roleMapper.seletUserRole(roleQuery)) {
+				if (role.getInt("id") == 1) {
+					info.addRole("admin");
+				}
+			}
 			// 用户的角色集合
 			// info.addRole("default");
 			// 用户的角色集合

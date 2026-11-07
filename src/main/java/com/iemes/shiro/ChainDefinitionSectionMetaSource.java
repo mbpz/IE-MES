@@ -70,6 +70,8 @@ public class ChainDefinitionSectionMetaSource implements FactoryBean<Ini.Section
 		section.put("/message/studentInfoUpload*.shtml", "perms[account_add]");
 		section.put("/message/userInfoDownLoad*.shtml", "perms[account_add]");
 		section.put("/message/**", "perms[base_data]");
+		section.put("/point_grade/**", "roles[admin]");
+		section.put("/base/getExamInfoList*.shtml", "roles[admin]");
 		addBusinessRules(section);
 		// 所有资源的访问权限，必须放在最后
 		/*section.put("/**", "authc");*/
