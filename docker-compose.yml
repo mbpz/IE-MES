@@ -18,8 +18,9 @@ services:
       - ./src/main/webapp/dbscript/iemes_v1.sql:/docker-entrypoint-initdb.d/001-original.sql:ro
       - ./docker/sql/002-runtime-tables.sql:/docker-entrypoint-initdb.d/002-runtime-tables.sql:ro
       - ./docker/sql/003-erp-delivery.sql:/docker-entrypoint-initdb.d/003-erp-delivery.sql:ro
+      - ./docker/sql/004-station-events.sql:/docker-entrypoint-initdb.d/004-station-events.sql:ro
     healthcheck:
-      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -h 127.0.0.1 -uiemes iemes_v1 -e "SELECT COUNT(*) FROM ly_resources; SELECT COUNT(*) FROM ly_sukey; SELECT COUNT(*) FROM ly_erp_order; SELECT COUNT(*) FROM ly_delivery_record" >/dev/null 2>&1']
+      test: [CMD-SHELL, 'MYSQL_PWD="$$MYSQL_PASSWORD" mysql -h 127.0.0.1 -uiemes iemes_v1 -e "SELECT COUNT(*) FROM ly_resources; SELECT COUNT(*) FROM ly_sukey; SELECT COUNT(*) FROM ly_erp_order; SELECT COUNT(*) FROM ly_delivery_record; SELECT COUNT(*) FROM ly_station_event" >/dev/null 2>&1']
       interval: 10s
       timeout: 5s
       retries: 30

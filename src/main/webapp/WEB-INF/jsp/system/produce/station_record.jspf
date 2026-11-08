@@ -1,0 +1,28 @@
+<script src="${pageContext.request.contextPath}/js/production_process/station_pod.js"></script>
+<div class="contentPanel station-pod-page" data-station="${stationType}">
+  <div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title">${stationTitle}</h3></div>
+    <div class="panel-body">
+      <c:choose>
+        <c:when test="${stationType == 'package_pod'}"><p class="text-muted">仅对已完成的 SFC 登记一次包装；记录本身不扣库存或改变生产状态。</p></c:when>
+        <c:otherwise><p class="text-muted">登记工位检测结果。未通过的记录不会自动创建不良品，请到不良处置流程继续处理。</p></c:otherwise>
+      </c:choose>
+      <form class="station-pod-form form-horizontal">
+        <div class="form-group"><label class="col-sm-2 control-label">产品 SFC</label><div class="col-sm-4"><input class="station-sfc form-control" name="sfc" maxlength="255" required></div>
+          <c:if test="${stationType != 'package_pod'}"><label class="col-sm-2 control-label">结果</label><div class="col-sm-4"><select name="result" class="form-control"><option value="pass">通过</option><option value="fail">未通过</option></select></div></c:if></div>
+        <div class="form-group"><label class="col-sm-2 control-label">记录编号</label><div class="col-sm-4"><input name="referenceNo" class="form-control" maxlength="80"></div>
+          <label class="col-sm-2 control-label">备注</label><div class="col-sm-4"><input name="note" class="form-control" maxlength="500"></div></div>
+        <div class="text-right"><button type="submit" class="btn btn-primary">登记</button></div>
+      </form>
+      <p class="station-feedback" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+  <div class="panel panel-default">
+    <div class="panel-heading"><h3 class="panel-title">本站点工位记录</h3></div>
+    <div class="panel-body">
+      <form class="station-search form-inline"><label>按 SFC 查询 <input class="station-query form-control" maxlength="255"></label> <button type="submit" class="btn btn-default">查询</button></form>
+      <div class="table-responsive"><table class="table table-striped"><thead><tr><th>SFC</th><th>结果</th><th>记录编号</th><th>备注</th><th>登记人</th><th>时间</th></tr></thead><tbody class="station-rows"></tbody></table></div>
+      <button class="station-prev btn btn-default" type="button">上一页</button> <span class="station-page-state"></span> <button class="station-next btn btn-default" type="button">下一页</button>
+    </div>
+  </div>
+</div>

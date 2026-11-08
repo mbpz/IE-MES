@@ -24,7 +24,7 @@ docker compose down
 
 ## 组成
 
-- `db`：MySQL 8.0.44，首次从原始 35 表 SQL 初始化 `iemes_v1`，再执行补充脚本创建告警与两个既有测试页面所需的 3 张表，以及新重建 ERP 订单/交付台账的 2 张表。旧脚本含零日期，服务 SQL mode 为 NO_ENGINE_SUBSTITUTION。当前空库共 40 张表，ERP/交付表没有历史数据。
+- `db`：MySQL 8.0.44，首次从原始 35 表 SQL 初始化 `iemes_v1`，再执行补充脚本创建告警与两个既有测试页面所需的 3 张表、ERP 订单/交付台账 2 张表及生产工位事件台账 1 张表。旧脚本含零日期，服务 SQL mode 为 NO_ENGINE_SUBSTITUTION。当前空库共 41 张表，新台账没有历史数据。
 - `app`：Maven/JDK 8 构建原始 WAR，Tomcat 9/JDK 8 运行，部署路径为 `/`。
 - JDBC 文件在启动时从容器环境生成，使 Spring 和读取 JDBC 文件的 ConfigUtils 使用相同配置。
 - `database`、`uploads`、`configuration`、`mailbox` 四个命名卷；上传卷首次会带入原有 Excel 模板。
@@ -35,7 +35,7 @@ docker compose down
 
 Compose 配置、镜像构建、数据库初始化、登录、代表性业务写入和权限、基础事务回滚、模板下载与单行导入、定时告警，以及隔离环境中的备份恢复均已验证。逐项范围见 checklist.md。
 
-仍待验证：所有业务分支、完整角色权限矩阵、其余导出路径及更多导入数据类型。原 12 处缺页入口中，工艺路线 2 处改指现存设计器、评分编辑改指现存页面、工单编辑和 ERP/交付 3 处已重建；剩余 6 处生产工位页面缺原实现。用户已移除 IDEA 图形界面验收要求。
+仍待验证：所有业务分支、完整角色权限矩阵、其余导出路径及更多导入数据类型。原 12 处缺页入口现在都有可加载页面；ERP/交付与四种工位台账为根据现有数据模型重建的新功能，无法证明与失传原版交互相同。用户已移除 IDEA 图形界面验收要求。
 
 ## 已有数据库卷升级
 
@@ -43,13 +43,14 @@ Docker 的 `/docker-entrypoint-initdb.d/` 仅在空数据库卷执行。已有�
 
 ```sh
 docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -uiemes --default-character-set=utf8mb4 iemes_v1' < docker/sql/003-erp-delivery.sql
+docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -uiemes --default-character-set=utf8mb4 iemes_v1' < docker/sql/004-station-events.sql
 docker compose up -d --build --wait
 docker compose ps
 ```
 
-迁移会新增 `ly_erp_order`、`ly_delivery_record` 和两个管理员菜单资源。对旧卷必须先执行迁移，再运行含新数据库健康检查的 Compose 配置；重复执行迁移不会重复资源或清空台账。本机主库已按此顺序升级并验证。
+迁移会新增 `ly_erp_order`、`ly_delivery_record`、`ly_station_event` 和对应菜单资源。对旧卷必须先执行迁移，再运行含新数据库健康检查的 Compose 配置；重复执行迁移不会重复资源或清空台账。本机主库已按此顺序升级并验证。
 
-## IDEA
+## 可选 IDEA 说明（不属于当前验收目标）
 
 通过项目根目录 pom.xml 导入。Project SDK、Maven Importer 与 Maven Runner 均选择真正的 JDK 8，不能选择 JavaAppletPlugin 中的 JRE。
 已在本机验证的 JDK：`/Library/Java/JavaVirtualMachines/jdk-1.8.jdk/Contents/Home`。
