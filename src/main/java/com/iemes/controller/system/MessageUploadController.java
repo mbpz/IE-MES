@@ -488,7 +488,7 @@ public class MessageUploadController extends BaseController {
 					String state = row.getCell(j++).getStringCellValue();
 					state = state.equals("是")?"1":"0";
 					OperationResourceFormMap operationResourceFormMap = new OperationResourceFormMap();
-					operationResourceFormMap.put("operation_no", operationResource_no);
+					operationResourceFormMap.put("operationResource_no", operationResource_no);
 					operationResourceFormMap.put("site", site);
 					List<OperationResourceFormMap> tempOperationResourceList = baseMapper.findByNames(operationResourceFormMap);
 					if(CollectionUtils.isEmpty(tempOperationResourceList)){

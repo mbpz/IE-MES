@@ -6,6 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 
@@ -38,8 +39,11 @@ public class POIUtils {
 			// 设置response参数，可以打开下载页面
 			response.reset();
 			response.setContentType("application/vnd.ms-excel;charset=utf-8");
-			response.setHeader("Content-Disposition",
-					"attachment;filename=" + new String((fileName + ".xls").getBytes(), "iso-8859-1"));
+			String downloadName = fileName + ".xls";
+			String fallbackName = downloadName.replaceAll("[^A-Za-z0-9._-]", "_");
+			String encodedName = URLEncoder.encode(downloadName, "UTF-8").replace("+", "%20");
+			response.setHeader("Content-Disposition", "attachment; filename=\"" + fallbackName
+					+ "\"; filename*=UTF-8''" + encodedName);
 			ServletOutputStream out = response.getOutputStream();
 			bis = new BufferedInputStream(is);
 			bos = new BufferedOutputStream(out);

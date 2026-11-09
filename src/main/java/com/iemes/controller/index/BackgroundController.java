@@ -1,10 +1,10 @@
 package com.iemes.controller.index;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
+import java.net.URLEncoder;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.List;
@@ -195,35 +195,31 @@ public class BackgroundController extends BaseController {
 	@RequestMapping("download")
 	public void download(String fileName, HttpServletRequest request, HttpServletResponse response)
 			throws Exception {
-
-		response.setContentType("text/html;charset=utf-8");
-		request.setCharacterEncoding("UTF-8");
-		java.io.BufferedInputStream bis = null;
-		java.io.BufferedOutputStream bos = null;
-
-		File downloadDirectory = new File(request.getSession().getServletContext().getRealPath("/"), "filezip");
-		String downLoadPath = new File(downloadDirectory, fileName).getPath();
-		System.out.println(downLoadPath);
-		try {
-			long fileLength = new File(downLoadPath).length();
-			response.setContentType("application/x-msdownload;");
-			response.setHeader("Content-disposition",
-					"attachment; filename=" + new String(fileName.getBytes("utf-8"), "ISO8859-1"));
-			response.setHeader("Content-Length", String.valueOf(fileLength));
-			bis = new BufferedInputStream(new FileInputStream(downLoadPath));
-			bos = new BufferedOutputStream(response.getOutputStream());
-			byte[] buff = new byte[2048];
-			int bytesRead;
-			while (-1 != (bytesRead = bis.read(buff, 0, buff.length))) {
-				bos.write(buff, 0, bytesRead);
+		if (fileName == null || fileName.trim().isEmpty() || fileName.contains("/") || fileName.contains("\\")
+				|| fileName.indexOf('\r') >= 0 || fileName.indexOf('\n') >= 0
+				|| ".".equals(fileName) || "..".equals(fileName)) {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+			return;
+		}
+		File directory = new File(request.getServletContext().getRealPath("/"), "filezip").getCanonicalFile();
+		File downloadFile = new File(directory, fileName).getCanonicalFile();
+		if (!directory.equals(downloadFile.getParentFile()) || !downloadFile.isFile() || !downloadFile.canRead()) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return;
+		}
+		String asciiName = fileName.replaceAll("[^A-Za-z0-9._-]", "_");
+		String encodedName = URLEncoder.encode(fileName, "UTF-8").replace("+", "%20");
+		response.setContentType("application/octet-stream");
+		response.setHeader("Content-Disposition", "attachment; filename=\"" + asciiName
+				+ "\"; filename*=UTF-8''" + encodedName);
+		response.setContentLengthLong(downloadFile.length());
+		try (BufferedInputStream input = new BufferedInputStream(new FileInputStream(downloadFile))) {
+			byte[] buffer = new byte[8192];
+			int length;
+			while ((length = input.read(buffer)) != -1) {
+				response.getOutputStream().write(buffer, 0, length);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-			if (bis != null)
-				bis.close();
-			if (bos != null)
-				bos.close();
+			response.getOutputStream().flush();
 		}
 	}
 	@RequestMapping(value = "logout", method = RequestMethod.GET)
