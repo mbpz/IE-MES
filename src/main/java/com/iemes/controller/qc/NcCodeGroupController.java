@@ -1,10 +1,14 @@
 package com.iemes.controller.qc;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 
 import net.sf.json.JSONObject;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.springframework.stereotype.Controller;
@@ -19,6 +23,7 @@ import com.iemes.annotation.SystemLog;
 import com.iemes.controller.base.ConstantController;
 import com.iemes.controller.index.BaseController;
 import com.iemes.entity.NcCodeGroupFormMap;
+import com.iemes.entity.NcCodeGroupRelFormMap;
 import com.iemes.entity.UserFormMap;
 import com.iemes.plugin.PageView;
 import com.iemes.score.GradeCalculateService;
@@ -91,10 +96,20 @@ public class NcCodeGroupController extends BaseController {
 	@RequestMapping("nc_group_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			model.addAttribute("ncCodeGroup", baseMapper.findbyFrist("id", id, NcCodeGroupFormMap.class));
-		}
+		NcCodeGroupFormMap group = currentSiteGroup(id);
+		if (group == null) return "redirect:/denied.jsp";
+		model.addAttribute("ncCodeGroup", group);
 		return Common.BACKGROUND_PATH + "/qc/nc_group/nc_group_edit";
+	}
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private NcCodeGroupFormMap currentSiteGroup(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		NcCodeGroupFormMap group = baseMapper.findbyFrist("id", id, NcCodeGroupFormMap.class);
+		return group != null && currentSite().equals(group.getStr("site")) ? group : null;
 	}
 	
 	@ResponseBody
@@ -102,8 +117,18 @@ public class NcCodeGroupController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="产品质量管理",methods="不合格组维护-修改不合格组")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
-		NcCodeGroupFormMap ncCodeGroupFormMap = getFormMap(NcCodeGroupFormMap.class);
-		baseMapper.editEntity(ncCodeGroupFormMap);
+		NcCodeGroupFormMap submitted = getFormMap(NcCodeGroupFormMap.class);
+		NcCodeGroupFormMap existing = currentSiteGroup(submitted.getStr("id"));
+		if (existing == null || !existing.getStr("nc_code_group_no").equals(submitted.getStr("nc_code_group_no"))) {
+			return "error";
+		}
+		NcCodeGroupFormMap update = new NcCodeGroupFormMap();
+		update.put("id", existing.get("id"));
+		for (String field : new String[] { "nc_code_group_desc", "state" }) {
+			if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+		}
+		if (update.size() == 1) return "error";
+		baseMapper.editEntity(update);
 		return "success";
 	}
 	
@@ -113,8 +138,19 @@ public class NcCodeGroupController extends BaseController {
 	@SystemLog(module="产品质量管理",methods="不合格组维护-删除不合格组")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		List<NcCodeGroupFormMap> groups = new ArrayList<NcCodeGroupFormMap>();
 		for (String id : ids) {
-			baseMapper.deleteByAttribute("id", id, NcCodeGroupFormMap.class);
+			NcCodeGroupFormMap group = currentSiteGroup(id);
+			if (group == null) return "error";
+			NcCodeGroupRelFormMap relation = new NcCodeGroupRelFormMap();
+			relation.put("nc_code_group", group.getStr("nc_code_group_no"));
+			relation.put("site", currentSite());
+			if (CollectionUtils.isNotEmpty(baseMapper.findByNames(relation))) return "error";
+			groups.add(group);
+		}
+		for (NcCodeGroupFormMap group : groups) {
+			baseMapper.deleteByAttribute("id", String.valueOf(group.get("id")), NcCodeGroupFormMap.class);
 		}
 		return "success";
 	}

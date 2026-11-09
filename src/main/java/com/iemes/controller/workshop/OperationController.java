@@ -1,5 +1,6 @@
 package com.iemes.controller.workshop;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -9,6 +10,7 @@ import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -69,12 +71,14 @@ public class OperationController extends BaseController {
 
 	@ResponseBody
 	@RequestMapping("operation_addEntity")
+	@Transactional(readOnly=false)
 	@SystemLog(module="车间数据维护",methods="操作维护-新增操作")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity(String txtGroupsSelect) {
 		JSONObject json = new JSONObject();
 		try {
 			OperationFormMap operationFormMap = getFormMap(OperationFormMap.class);
 			operationFormMap.put("txtGroupsSelect", txtGroupsSelect);
+			operationFormMap.put("site", currentSite());
 			// 获取request
 			HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
 			// 通过工具类获取当前登录的bean
@@ -95,6 +99,7 @@ public class OperationController extends BaseController {
 			json.put("result", ConstantController.SUCCESS);
 			json.put("score", rs);
 		} catch (Exception e) {
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return ConstantController.ERROR;
 		}
 		return json.toString();
@@ -103,10 +108,20 @@ public class OperationController extends BaseController {
 	@RequestMapping("operation_editUI")
 	public String editUI(Model model) {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			model.addAttribute("operation", baseMapper.findbyFrist("id", id, OperationFormMap.class));
-		}
+		OperationFormMap operation = currentSiteOperation(id);
+		if (operation == null) return "redirect:/denied.jsp";
+		model.addAttribute("operation", operation);
 		return Common.BACKGROUND_PATH + "/workshopdata/operation/operation_edit";
+	}
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private OperationFormMap currentSiteOperation(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		OperationFormMap operation = baseMapper.findbyFrist("id", id, OperationFormMap.class);
+		return operation != null && currentSite().equals(operation.getStr("site")) ? operation : null;
 	}
 
 	@ResponseBody
@@ -115,21 +130,30 @@ public class OperationController extends BaseController {
 	@SystemLog(module="车间数据维护",methods="操作维护-修改操作")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity(String txtGroupsSelect) {
 		try {
-			OperationFormMap operationFormMap = getFormMap(OperationFormMap.class);
-			operationFormMap.put("txtGroupsSelect", txtGroupsSelect);
-			baseMapper.editEntity(operationFormMap);	
-			operationMapper.deleteByAttribute("operation_no", operationFormMap.get("id")+"", OperationPodFormMap.class);
+			OperationFormMap submitted = getFormMap(OperationFormMap.class);
+			OperationFormMap existing = currentSiteOperation(submitted.getStr("id"));
+			if (existing == null || (submitted.getStr("operation_no") != null
+					&& !existing.getStr("operation_no").equals(submitted.getStr("operation_no")))) return ConstantController.ERROR;
+			OperationFormMap update = new OperationFormMap();
+			update.put("id", existing.get("id"));
+			for (String field : new String[] { "operation_description", "operation_type", "resoucre_type",
+					"default_resource", "workcenter", "state" }) {
+				if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+			}
+			if (update.size() > 1) baseMapper.editEntity(update);
+			operationMapper.deleteByAttribute("operation_no", String.valueOf(existing.get("id")), OperationPodFormMap.class);
 			if(!Common.isEmpty(txtGroupsSelect)){
 				String[] txt = txtGroupsSelect.split(",");
-				OperationPodFormMap  operationPodFormMap = getFormMap(OperationPodFormMap.class);
+				OperationPodFormMap operationPodFormMap = new OperationPodFormMap();
 				for (String podButtonNO : txt) {
-					operationPodFormMap.put("operation_no", operationFormMap.get("id"));
+					operationPodFormMap.put("operation_no", existing.get("id"));
 					operationPodFormMap.put("pod_button_no", podButtonNO);
 					operationMapper.addEntity(operationPodFormMap);
 				}
 			}	
 		} catch (Exception e) {
 			e.printStackTrace();
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return ConstantController.ERROR;
 		}
 		return ConstantController.SUCCESS;
@@ -140,13 +164,23 @@ public class OperationController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="车间数据维护",methods="操作维护-删除操作")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() {
-		try {String[] ids = getParaValues("ids");
-		for (String id : ids) {
-			operationMapper.deleteByAttribute("operation_no", id, OperationPodFormMap.class);
-			baseMapper.deleteByAttribute("id", id, OperationFormMap.class);
-		}
+		try {
+			String[] ids = getParaValues("ids");
+			if (ids == null || ids.length == 0) return ConstantController.ERROR;
+			List<OperationFormMap> operations = new ArrayList<OperationFormMap>();
+			for (String id : ids) {
+				OperationFormMap operation = currentSiteOperation(id);
+				if (operation == null) return ConstantController.ERROR;
+				operations.add(operation);
+			}
+			for (OperationFormMap operation : operations) {
+				String id = String.valueOf(operation.get("id"));
+				operationMapper.deleteByAttribute("operation_no", id, OperationPodFormMap.class);
+				baseMapper.deleteByAttribute("id", id, OperationFormMap.class);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return ConstantController.ERROR;
 		}
 		return ConstantController.SUCCESS;

@@ -44,11 +44,12 @@ Docker 的 `/docker-entrypoint-initdb.d/` 仅在空数据库卷执行。已有�
 ```sh
 docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -uiemes --default-character-set=utf8mb4 iemes_v1' < docker/sql/003-erp-delivery.sql
 docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -uiemes --default-character-set=utf8mb4 iemes_v1' < docker/sql/004-station-events.sql
+docker compose exec -T db sh -c 'MYSQL_PWD="$MYSQL_PASSWORD" mysql -uiemes --default-character-set=utf8mb4 iemes_v1' < docker/sql/005-site-uniqueness.sql
 docker compose up -d --build --wait
 docker compose ps
 ```
 
-迁移会新增 `ly_erp_order`、`ly_delivery_record`、`ly_station_event` 和对应菜单资源。对旧卷必须先执行迁移，再运行含新数据库健康检查的 Compose 配置；重复执行迁移不会重复资源或清空台账。本机主库已按此顺序升级并验证。
+迁移会新增 `ly_erp_order`、`ly_delivery_record`、`ly_station_event` 和对应菜单资源，并给 `ly_site.site` 加唯一索引。运行 `005` 前先检查现有库是否有重复站点编号；若有，应先人工合并或清理，不能直接执行 ALTER。对旧卷必须先执行迁移，再运行含新数据库健康检查的 Compose 配置；重复执行迁移不会重复资源、索引或清空台账。本机主库已按此顺序升级并验证。
 
 ## 可选 IDEA 说明（不属于当前验收目标）
 

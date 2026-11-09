@@ -1,5 +1,6 @@
 package com.iemes.controller.workshop;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -173,10 +174,20 @@ public class ItemController extends BaseController {
 	@RequestMapping("item_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			model.addAttribute("item", baseMapper.findbyFrist("id", id, ItemFormMap.class));
-		}
+		ItemFormMap item = currentSiteItem(id);
+		if (item == null) return "redirect:/denied.jsp";
+		model.addAttribute("item", item);
 		return Common.BACKGROUND_PATH + "/item_resource/item/item_edit";
+	}
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private ItemFormMap currentSiteItem(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		ItemFormMap item = baseMapper.findbyFrist("id", id, ItemFormMap.class);
+		return item != null && currentSite().equals(item.getStr("site")) ? item : null;
 	}
 
 	@ResponseBody
@@ -184,8 +195,17 @@ public class ItemController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="生产物料控制",methods="物料维护-修改物料")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
-		ItemFormMap itemFormMap = getFormMap(ItemFormMap.class);
-		baseMapper.editEntity(itemFormMap);
+		ItemFormMap submitted = getFormMap(ItemFormMap.class);
+		ItemFormMap existing = currentSiteItem(submitted.getStr("id"));
+		if (existing == null || (submitted.getStr("item_no") != null
+				&& !existing.getStr("item_no").equals(submitted.getStr("item_no")))) return "error";
+		ItemFormMap update = new ItemFormMap();
+		update.put("id", existing.get("id"));
+		for (String field : new String[] { "item_name", "item_desc", "bom_no", "item_type", "state" }) {
+			if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+		}
+		if (update.size() == 1) return "error";
+		baseMapper.editEntity(update);
 		return "success";
 	}
 
@@ -195,8 +215,15 @@ public class ItemController extends BaseController {
 	@SystemLog(module="生产物料控制",methods="物料维护-删除物料")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		List<ItemFormMap> items = new ArrayList<ItemFormMap>();
 		for (String id : ids) {
-			baseMapper.deleteByAttribute("id", id, ItemFormMap.class);
+			ItemFormMap item = currentSiteItem(id);
+			if (item == null) return "error";
+			items.add(item);
+		}
+		for (ItemFormMap item : items) {
+			baseMapper.deleteByAttribute("id", String.valueOf(item.get("id")), ItemFormMap.class);
 		}
 		return "success";
 	}

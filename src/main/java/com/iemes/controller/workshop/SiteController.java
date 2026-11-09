@@ -3,8 +3,9 @@ package com.iemes.controller.workshop;
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.shiro.SecurityUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -14,9 +15,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import com.iemes.annotation.SystemLog;
 import com.iemes.controller.index.BaseController;
 import com.iemes.entity.SiteFormMap;
-import com.iemes.entity.UserFormMap;
 import com.iemes.mapper.site.SiteMapper;
 import com.iemes.plugin.PageView;
+import com.iemes.service.SiteLifecycleService;
 import com.iemes.util.Common;
 
 /**
@@ -30,6 +31,8 @@ import com.iemes.util.Common;
 public class SiteController extends BaseController {
 	@Inject
 	private SiteMapper siteMapper; 
+	@Inject
+	private SiteLifecycleService siteLifecycleService;
 	
 	@RequestMapping("site_list")
 	public String listUI(Model model) throws Exception {
@@ -54,18 +57,17 @@ public class SiteController extends BaseController {
 	
 	@ResponseBody
 	@RequestMapping("site_addEntity")
-	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="车间数据维护",methods="站点维护-新增站点")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity() throws Exception {
 		SiteFormMap siteFormMap = getFormMap(SiteFormMap.class);
-		
-		// 获取request
-		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
-		// 通过工具类获取当前登录的bean
-		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
-		siteFormMap.put("byUser", userFormMap.getStr("accountName"));
-		siteMapper.addEntity(siteFormMap);
-		return "success";
+		try {
+			siteLifecycleService.create(siteFormMap.getStr("site"), siteFormMap.getStr("siteName"),
+					siteFormMap.getStr("siteDescription"), siteFormMap.getStr("state"),
+					String.valueOf(SecurityUtils.getSubject().getPrincipal()));
+			return "success";
+		} catch (IllegalArgumentException | DuplicateKeyException invalid) {
+			return "error";
+		}
 	}
 	
 	/**
@@ -78,12 +80,7 @@ public class SiteController extends BaseController {
 	@RequestMapping("isExist")
 	@ResponseBody
 	public boolean isExist(String name) {
-		SiteFormMap siteFormMap = siteMapper.findbyFrist("site", name, SiteFormMap.class);
-		if (siteFormMap == null) {
-			return true;
-		} else {
-			return false;
-		}
+		return !siteLifecycleService.exists(name);
 	}
 	
 	@RequestMapping("site_editUI")
@@ -97,23 +94,29 @@ public class SiteController extends BaseController {
 	
 	@ResponseBody
 	@RequestMapping("site_editEntity")
-	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="车间数据维护",methods="站点维护-修改站点")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
 		SiteFormMap siteFormMap = getFormMap(SiteFormMap.class);
-		siteMapper.editEntity(siteFormMap);
-		return "success";
+		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();
+		try {
+			siteLifecycleService.edit(siteFormMap.getStr("id"),
+					request.getParameter("siteFormMap.site"), request.getParameter("siteFormMap.siteName"),
+					request.getParameter("siteFormMap.siteDescription"), request.getParameter("siteFormMap.state"));
+			return "success";
+		} catch (IllegalArgumentException | DuplicateKeyException invalid) {
+			return "error";
+		}
 	}
 	
 	@ResponseBody
 	@RequestMapping("site_deleteEntity")
-	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="车间数据维护",methods="站点维护-删除站点")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
-		String[] ids = getParaValues("ids");
-		for (String id : ids) {
-			siteMapper.deleteByAttribute("id", id, SiteFormMap.class);
+		try {
+			siteLifecycleService.delete(getParaValues("ids"));
+			return "success";
+		} catch (IllegalArgumentException invalid) {
+			return "error";
 		}
-		return "success";
 	}
 }

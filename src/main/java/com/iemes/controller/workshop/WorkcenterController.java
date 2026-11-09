@@ -1,8 +1,10 @@
 package com.iemes.controller.workshop;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -10,6 +12,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.springframework.stereotype.Controller;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -43,6 +46,27 @@ public class WorkcenterController extends BaseController {
 
 	@Inject
 	private GradeCalculateService gradeCalculateService;
+
+	@Inject
+	private DataSource dataSource;
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private WorkCenterFormMap currentSiteCenter(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		WorkCenterFormMap center = workShopMapper.findbyFrist("id", id, WorkCenterFormMap.class);
+		return center != null && currentSite().equals(center.getStr("site")) ? center : null;
+	}
+
+	private boolean centerExists(String number) {
+		if (Common.isEmpty(number)) return false;
+		Integer count = new JdbcTemplate(dataSource).queryForObject(
+				"SELECT COUNT(*) FROM ly_workcenter WHERE site=? AND workcenter_no=?",
+				new Object[] { currentSite(), number }, Integer.class);
+		return count != null && count.intValue() > 0;
+	}
 
 	@Inject
 	private WorkShopMapper workShopMapper;
@@ -177,6 +201,7 @@ public class WorkcenterController extends BaseController {
 
 	@ResponseBody
 	@RequestMapping("workcenter_addEntity")
+	@Transactional(readOnly=false)
 	@SystemLog(module="车间数据维护",methods="工作中心维护-新增工作中心")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity() throws Exception {
 		JSONObject json = new JSONObject();
@@ -184,23 +209,22 @@ public class WorkcenterController extends BaseController {
 		Session session = SecurityUtils.getSubject().getSession();
 		// 获取request
 		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
+		String parentWorkcenterNo = request.getParameter("workcenterFormMap.workcenter_parent");
+		if (StringUtils.isNotEmpty(parentWorkcenterNo) && !centerExists(parentWorkcenterNo)) return "error";
 		// 通过工具类获取当前登录的bean
 		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
 		workCenterFormMap.put("byUser", userFormMap.getStr("accountName"));
+		workCenterFormMap.put("site", currentSite());
 		workShopMapper.addEntity(workCenterFormMap);
 
 		//保存工作中心关联表
-		String parentWorkcenterNo = (String) request.getParameter("workcenterFormMap.workcenter_parent");
 		if(StringUtils.isNotEmpty(parentWorkcenterNo))
 		{
-			if(workShopMapper.findByAttribute("workcenter_no", parentWorkcenterNo, WorkCenterFormMap.class) != null)
-			{
-				WorkCenterRelationFormMap relationMap = new WorkCenterRelationFormMap();
-				relationMap.put("workcenter", parentWorkcenterNo);
-				relationMap.put("workcenter_child", workCenterFormMap.getStr("workcenter_no"));
-				relationMap.put("site", session.getAttribute("site"));
-				workShopMapper.addEntity(relationMap);
-			}
+			WorkCenterRelationFormMap relationMap = new WorkCenterRelationFormMap();
+			relationMap.put("workcenter", parentWorkcenterNo);
+			relationMap.put("workcenter_child", workCenterFormMap.getStr("workcenter_no"));
+			relationMap.put("site", session.getAttribute("site"));
+			workShopMapper.addEntity(relationMap);
 		}
 		String rs = gradeCalculateService.GradeCalculate("工作中心维护", null);
 		json.put("result", ConstantController.SUCCESS);
@@ -212,40 +236,58 @@ public class WorkcenterController extends BaseController {
 	public String editUI(Model model) throws Exception 
 	{
 		String id = getPara("id");
-		if(Common.isNotEmpty(id))
-		{
-			WorkCenterFormMap workCenterFormMap = workShopMapper.findbyFrist("id", id, WorkCenterFormMap.class);
-			List<WorkCenterFormMap> fWorkcenter = workShopMapper.getParentWorkCenterMap(workCenterFormMap.getStr("workcenter_no"));
-			if(CollectionUtils.isNotEmpty(fWorkcenter))
-			{
-				workCenterFormMap.put("workcenter_parent", fWorkcenter.get(0).getStr("workcenter_no"));
-			}
-			model.addAttribute("workcenter", workCenterFormMap);
-		}
+		WorkCenterFormMap center = currentSiteCenter(id);
+		if (center == null) return "redirect:/denied.jsp";
+		WorkCenterRelationFormMap relation = new WorkCenterRelationFormMap();
+		relation.put("workcenter_child", center.getStr("workcenter_no"));
+		relation.put("site", currentSite());
+		List<WorkCenterRelationFormMap> parents = baseMapper.findByNames(relation);
+		if (CollectionUtils.isNotEmpty(parents)) center.put("workcenter_parent", parents.get(0).getStr("workcenter"));
+		model.addAttribute("workcenter", center);
 
 		return Common.BACKGROUND_PATH + "/workshopdata/workcenter/workcenter_edit";
 	}
 
 	@ResponseBody
 	@RequestMapping("workcenter_editEntity")
+	@Transactional(readOnly=false)
 	@SystemLog(module="车间数据维护",methods="工作中心维护-修改工作中心")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
-		Session session = SecurityUtils.getSubject().getSession();
-		String site = session.getAttribute("site").toString();
-		
-		WorkCenterFormMap workCenterFormMap = getFormMap(WorkCenterFormMap.class);
-		workShopMapper.editEntity(workCenterFormMap);
-		if (!StringUtils.isEmpty(workCenterFormMap.getStr("workcenter_parent"))) {
-			WorkCenterRelationFormMap workcenterRelation = new WorkCenterRelationFormMap();
-			workcenterRelation.put("workcenter_child", workCenterFormMap.getStr("workcenter_no"));
-			workcenterRelation.put("workcenter", workCenterFormMap.getStr("workcenter_parent"));
-			workcenterRelation.put("site", site);
-			List<WorkCenterRelationFormMap> list = baseMapper.findByNames(workcenterRelation);
-			if (list==null || list.size()<=0) {
-				baseMapper.addEntity(workcenterRelation);
-			}else {
-				workcenterRelation = list.get(0);
-				baseMapper.editEntity(workcenterRelation);
+		WorkCenterFormMap submitted = getFormMap(WorkCenterFormMap.class);
+		WorkCenterFormMap existing = currentSiteCenter(submitted.getStr("id"));
+		if (existing == null) return "error";
+		String site = currentSite();
+		String oldNo = existing.getStr("workcenter_no");
+		String newNo = submitted.getStr("workcenter_no") == null ? oldNo : submitted.getStr("workcenter_no");
+		if (Common.isEmpty(newNo) || (!newNo.equals(oldNo) && centerExists(newNo))) return "error";
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+		String parent = request.getParameter("workcenterFormMap.workcenter_parent");
+		if (StringUtils.isNotEmpty(parent)
+				&& (parent.equals(oldNo) || parent.equals(newNo) || !centerExists(parent))) return "error";
+		WorkCenterFormMap update = new WorkCenterFormMap();
+		update.put("id", existing.get("id"));
+		for (String field : new String[] { "workcenter_no", "workcenter_name", "workcenter_description",
+				"workcenter_version", "workcenter_class", "workcenter_type", "state" }) {
+			if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+		}
+		if (update.size() == 1 && parent == null) return "error";
+		if (update.size() > 1) workShopMapper.editEntity(update);
+		JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+		if (!newNo.equals(oldNo)) {
+			jdbc.update("UPDATE ly_workcenter_relation SET workcenter=? WHERE site=? AND workcenter=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_workcenter_relation SET workcenter_child=? WHERE site=? AND workcenter_child=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_operation SET workcenter=? WHERE site=? AND workcenter=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_sfc_step SET workcenter=? WHERE site=? AND workcenter=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_shoporder SET workcenter=? WHERE site=? AND workcenter=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_shoporder SET workline=? WHERE site=? AND workline=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_nc_repair SET workcenter=? WHERE site=? AND workcenter=?", newNo, site, oldNo);
+			jdbc.update("UPDATE ly_nc_repair SET workcenter_child=? WHERE site=? AND workcenter_child=?", newNo, site, oldNo);
+		}
+		if (parent != null) {
+			jdbc.update("DELETE FROM ly_workcenter_relation WHERE site=? AND workcenter_child=?", site, newNo);
+			if (StringUtils.isNotEmpty(parent)) {
+				jdbc.update("INSERT INTO ly_workcenter_relation (workcenter,workcenter_child,site) VALUES (?,?,?)",
+						parent, newNo, site);
 			}
 		}
 		return "success";
@@ -257,10 +299,37 @@ public class WorkcenterController extends BaseController {
 	@SystemLog(module="车间数据维护",methods="工作中心维护-删除工作中心")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		List<WorkCenterFormMap> centers = new ArrayList<WorkCenterFormMap>();
 		for (String id : ids) {
-			workShopMapper.deleteByAttribute("id", id, WorkCenterFormMap.class);
+			WorkCenterFormMap center = currentSiteCenter(id);
+			if (center == null || hasDependents(center.getStr("workcenter_no"))) return "error";
+			centers.add(center);
+		}
+		JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+		for (WorkCenterFormMap center : centers) {
+			jdbc.update("DELETE FROM ly_workcenter_relation WHERE site=? AND workcenter_child=?",
+					currentSite(), center.getStr("workcenter_no"));
+			workShopMapper.deleteByAttribute("id", String.valueOf(center.get("id")), WorkCenterFormMap.class);
 		}
 		return "success";
+	}
+
+	private boolean hasDependents(String number) {
+		JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+		String[][] references = {
+				{ "ly_workcenter_relation", "workcenter" }, { "ly_operation", "workcenter" },
+				{ "ly_sfc_step", "workcenter" }, { "ly_shoporder", "workcenter" },
+				{ "ly_shoporder", "workline" }, { "ly_nc_repair", "workcenter" },
+				{ "ly_nc_repair", "workcenter_child" }
+		};
+		for (String[] reference : references) {
+			Integer count = jdbc.queryForObject("SELECT COUNT(*) FROM " + reference[0]
+					+ " WHERE site=? AND " + reference[1] + "=?",
+					new Object[] { currentSite(), number }, Integer.class);
+			if (count != null && count.intValue() > 0) return true;
+		}
+		return false;
 	}
 	
 	/**

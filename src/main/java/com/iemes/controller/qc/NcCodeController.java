@@ -1,5 +1,6 @@
 package com.iemes.controller.qc;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -22,6 +23,7 @@ import com.iemes.annotation.SystemLog;
 import com.iemes.controller.base.ConstantController;
 import com.iemes.controller.index.BaseController;
 import com.iemes.entity.NcCodeFormMap;
+import com.iemes.entity.NcCodeGroupFormMap;
 import com.iemes.entity.NcCodeGroupRelFormMap;
 import com.iemes.entity.UserFormMap;
 import com.iemes.plugin.PageView;
@@ -80,13 +82,15 @@ public class NcCodeController extends BaseController {
 	
 	@ResponseBody
 	@RequestMapping("nc_addEntity")
-//	@Transactional(readOnly=false)//需要事务操作必须加入此注解
+	@Transactional(readOnly=false)
 	@SystemLog(module="产品质量管理",methods="不合格维护-新增不合格")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity() throws Exception {
 		NcCodeFormMap ncCodeFormMap = getFormMap(NcCodeFormMap.class);
 		
 		// 获取request
 		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
+		String groupNo = request.getParameter("ncCodeGroupFormMap.nc_code_group_no");
+		if (Common.isEmpty(ncCodeFormMap.getStr("nc_code")) || !currentSiteGroupExists(groupNo)) return "error";
 		// 通过工具类获取当前登录的bean
 		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
 		Session session = SecurityUtils.getSubject().getSession();
@@ -95,11 +99,10 @@ public class NcCodeController extends BaseController {
 		baseMapper.addEntity(ncCodeFormMap);
 		
 		//保存不合格代码与不合代码组关联关系
-		String nc_code_group_no = request.getParameter("ncCodeGroupFormMap.nc_code_group_no");
 		NcCodeGroupRelFormMap ncCodeGroupRelFormMap = new NcCodeGroupRelFormMap();
 		ncCodeGroupRelFormMap.put("site", session.getAttribute("site"));
 		ncCodeGroupRelFormMap.put("nc_code", ncCodeFormMap.getStr("nc_code"));
-		ncCodeGroupRelFormMap.put("nc_code_group", nc_code_group_no);
+		ncCodeGroupRelFormMap.put("nc_code_group", groupNo);
 		baseMapper.addEntity(ncCodeGroupRelFormMap);
 		
 		JSONObject json = new JSONObject();
@@ -117,46 +120,69 @@ public class NcCodeController extends BaseController {
 	@RequestMapping("nc_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			NcCodeFormMap ncCodeFormMap = baseMapper.findbyFrist("id", id, NcCodeFormMap.class);
+		NcCodeFormMap ncCodeFormMap = currentSiteCode(id);
+		if (ncCodeFormMap == null) return "redirect:/denied.jsp";
 			//加载所属不合格组
 			String ncCode = ncCodeFormMap.getStr("nc_code");
-			List<NcCodeGroupRelFormMap> ncCodeGroupRelFormMaps = baseMapper.findByAttribute("nc_code", ncCode, NcCodeGroupRelFormMap.class);
+			NcCodeGroupRelFormMap query = new NcCodeGroupRelFormMap();
+			query.put("nc_code", ncCode);
+			query.put("site", currentSite());
+			List<NcCodeGroupRelFormMap> ncCodeGroupRelFormMaps = baseMapper.findByNames(query);
 			if(CollectionUtils.isNotEmpty(ncCodeGroupRelFormMaps))
 			{
 				NcCodeGroupRelFormMap ncCodeGroupRelFormMap = ncCodeGroupRelFormMaps.get(0);
 				ncCodeFormMap.put("nc_code_group_no", ncCodeGroupRelFormMap.getStr("nc_code_group"));
 			}
 			model.addAttribute("ncCode", ncCodeFormMap);
-		}
 		return Common.BACKGROUND_PATH + "/qc/nc/nc_edit";
+	}
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private NcCodeFormMap currentSiteCode(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		NcCodeFormMap code = baseMapper.findbyFrist("id", id, NcCodeFormMap.class);
+		return code != null && currentSite().equals(code.getStr("site")) ? code : null;
+	}
+
+	private boolean currentSiteGroupExists(String groupNo) {
+		if (Common.isEmpty(groupNo)) return false;
+		NcCodeGroupFormMap query = new NcCodeGroupFormMap();
+		query.put("nc_code_group_no", groupNo);
+		query.put("site", currentSite());
+		return CollectionUtils.isNotEmpty(baseMapper.findByNames(query));
 	}
 	
 	@ResponseBody
 	@RequestMapping("nc_editEntity")
+	@Transactional(readOnly=false)
 	@SystemLog(module="产品质量管理",methods="不合格维护-修改不合格")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
-		Session session = SecurityUtils.getSubject().getSession();
-		String site = session.getAttribute("site").toString();
-		
-		NcCodeFormMap ncCodeFormMap = getFormMap(NcCodeFormMap.class);
-		
-		//保存不合格代码与不合代码组关联关系
-		String groupNo = ncCodeFormMap.getStr("nc_code_group_no");
-		String ncCode = ncCodeFormMap.getStr("nc_code");
-		
-		
-		NcCodeGroupRelFormMap ncCodeGroupRelFormMap = new NcCodeGroupRelFormMap();
-		ncCodeGroupRelFormMap.put("nc_code", ncCode);
-		ncCodeGroupRelFormMap.put("site", site);
-		List<NcCodeGroupRelFormMap> list = baseMapper.findByNames(ncCodeGroupRelFormMap);
-		if (list!=null || list.size()>0) {
-			ncCodeGroupRelFormMap = list.get(0);
-			ncCodeGroupRelFormMap.put("nc_code_group", groupNo);
-			baseMapper.editEntity(ncCodeGroupRelFormMap);
+		NcCodeFormMap submitted = getFormMap(NcCodeFormMap.class);
+		NcCodeFormMap existing = currentSiteCode(submitted.getStr("id"));
+		if (existing == null || !existing.getStr("nc_code").equals(submitted.getStr("nc_code"))) return "error";
+		String groupNo = submitted.getStr("nc_code_group_no");
+		if (!currentSiteGroupExists(groupNo)) return "error";
+		NcCodeGroupRelFormMap relation = new NcCodeGroupRelFormMap();
+		relation.put("nc_code", existing.getStr("nc_code"));
+		relation.put("site", currentSite());
+		List<NcCodeGroupRelFormMap> links = baseMapper.findByNames(relation);
+		if (CollectionUtils.isNotEmpty(links)) {
+			relation = links.get(0);
+			relation.put("nc_code_group", groupNo);
+			baseMapper.editEntity(relation);
+		} else {
+			relation.put("nc_code_group", groupNo);
+			baseMapper.addEntity(relation);
 		}
-		
-		baseMapper.editEntity(ncCodeFormMap);
+		NcCodeFormMap update = new NcCodeFormMap();
+		update.put("id", existing.get("id"));
+		for (String field : new String[] { "nc_code_desc", "state" }) {
+			if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+		}
+		if (update.size() > 1) baseMapper.editEntity(update);
 		return "success";
 	}
 	
@@ -166,8 +192,19 @@ public class NcCodeController extends BaseController {
 	@SystemLog(module="产品质量管理",methods="不合格维护-删除不合格")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		List<NcCodeFormMap> codes = new ArrayList<NcCodeFormMap>();
 		for (String id : ids) {
-			baseMapper.deleteByAttribute("id", id, NcCodeFormMap.class);
+			NcCodeFormMap code = currentSiteCode(id);
+			if (code == null) return "error";
+			codes.add(code);
+		}
+		for (NcCodeFormMap code : codes) {
+			NcCodeGroupRelFormMap relation = new NcCodeGroupRelFormMap();
+			relation.put("nc_code", "'" + code.getStr("nc_code") + "'");
+			relation.put("site", "'" + currentSite() + "'");
+			baseMapper.deleteByNames(relation);
+			baseMapper.deleteByAttribute("id", String.valueOf(code.get("id")), NcCodeFormMap.class);
 		}
 		return "success";
 	}

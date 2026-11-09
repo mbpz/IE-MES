@@ -6,12 +6,16 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
+import javax.sql.DataSource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.shiro.SecurityUtils;
 import org.apache.shiro.session.Session;
 import org.springframework.stereotype.Controller;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -41,6 +45,27 @@ import net.sf.json.JSONObject;
 @Controller
 @RequestMapping("/workshop/")
 public class RoutingController extends BaseController {
+	@Inject
+	private DataSource dataSource;
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private RoutingFormMap currentSiteRouting(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		RoutingFormMap route = baseMapper.findbyFrist("id", id, RoutingFormMap.class);
+		return route != null && currentSite().equals(route.getStr("siteBo")) ? route : null;
+	}
+
+	private RoutingFormMap currentSiteRoutingByNo(String number) {
+		if (Common.isEmpty(number)) return null;
+		RoutingFormMap query = new RoutingFormMap();
+		query.put("process_route", number);
+		query.put("siteBo", currentSite());
+		List<RoutingFormMap> routes = baseMapper.findByNames(query);
+		return routes == null || routes.isEmpty() ? null : routes.get(0);
+	}
 	
 	@Inject
 	private RoutingMapper routingMapper;
@@ -80,7 +105,7 @@ public class RoutingController extends BaseController {
 	
 	@ResponseBody
 	@RequestMapping("routing_addEntity")
-//	@Transactional(readOnly=false)//需要事务操作必须加入此注解
+	@Transactional(readOnly=false)
 	@SystemLog(module="车间数据维护",methods="工艺路线维护-新增工艺路线")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity() {
 		RoutingFormMap routingFormMap = getFormMap(RoutingFormMap.class);
@@ -93,13 +118,15 @@ public class RoutingController extends BaseController {
 		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
 		routingFormMap.put("createUser", userFormMap.getStr("accountName"));
 		routingFormMap.put("siteBo", session.getAttribute("site"));
+		if (Common.isEmpty(routingFormMap.getStr("process_route"))
+				|| currentSiteRoutingByNo(routingFormMap.getStr("process_route")) != null) return ConstantController.ERROR;
 		try{
 			routingMapper.addEntity(routingFormMap);
 			String data = routingFormMap.getStr("data");
 			JSONObject obj = JSONObject.fromObject(data);
 			JSONObject lines = (JSONObject) obj.get("lines");
 			JSONObject nodes = (JSONObject) obj.get("nodes");
-			if (nodes.size()==0) {
+			if (lines.size()==0 && nodes.size()==1) {
 				Set<String> set = nodes.keySet();
 				int i=0;
 				for (String key : set) {
@@ -116,6 +143,7 @@ public class RoutingController extends BaseController {
 					baseMapper.addEntity(map2);
 				}
 			}else {
+				if (lines.size()==0) throw new IllegalArgumentException("工艺路线节点未连接");
 				Set<String> set = lines.keySet();
 				int i=0;
 				for (String key : set) {
@@ -142,6 +170,7 @@ public class RoutingController extends BaseController {
 			}
 		}catch(Exception e){
 			e.printStackTrace();
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return ConstantController.ERROR;
 		}
 		JSONObject json = new JSONObject();
@@ -182,9 +211,9 @@ public class RoutingController extends BaseController {
 	@RequestMapping("routing_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			model.addAttribute("routing", routingMapper.findbyFrist("id", id, RoutingFormMap.class));
-		}
+		RoutingFormMap route = currentSiteRouting(id);
+		if (route == null) return "redirect:/denied.jsp";
+		model.addAttribute("routing", route);
 		return "redirect:/process_designer/gooFlow/routing_edit.html";
 	}
 	
@@ -193,36 +222,46 @@ public class RoutingController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="车间数据维护",methods="工艺路线维护-修改工艺路线")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
-		RoutingFormMap routingFormMap = getFormMap(RoutingFormMap.class);
-		
-		// 获取request
-		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest(); 
-		Session session = SecurityUtils.getSubject().getSession();
-		String site = session.getAttribute("site").toString();
-		
-		// 通过工具类获取当前登录的bean
-		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
-		routingFormMap.put("createUser", userFormMap.getStr("accountName"));
-		routingFormMap.put("siteBo", site);
+		RoutingFormMap submitted = getFormMap(RoutingFormMap.class);
+		RoutingFormMap existing = currentSiteRouting(submitted.getStr("id"));
+		if (existing == null) return ConstantController.ERROR;
+		String site = currentSite();
+		String oldNo = existing.getStr("process_route");
+		String newNo = submitted.getStr("process_route") == null ? oldNo : submitted.getStr("process_route");
+		if (Common.isEmpty(newNo) || (currentSiteRoutingByNo(newNo) != null && !newNo.equals(oldNo))) {
+			return ConstantController.ERROR;
+		}
+		String data = submitted.getStr("data");
+		if (Common.isEmpty(data)) return ConstantController.ERROR;
+		RoutingFormMap update = new RoutingFormMap();
+		update.put("id", existing.get("id"));
+		update.put("process_route", newNo);
+		for (String field : new String[] { "process_route_desc", "state", "allowpass", "data" }) {
+			if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+		}
 		try{
-			routingMapper.editEntity(routingFormMap);
+			routingMapper.editEntity(update);
+			if (!newNo.equals(oldNo)) {
+				JdbcTemplate jdbc = new JdbcTemplate(dataSource);
+				jdbc.update("UPDATE ly_shoporder SET process_route=? WHERE site=? AND process_route=?", newNo, site, oldNo);
+				jdbc.update("UPDATE ly_sfc_step SET process_route=? WHERE site=? AND process_route=?", newNo, site, oldNo);
+			}
 			
 			//根据工艺路线、站点删除原来的工艺步骤信息
 			RoutingStepFormMap map = new RoutingStepFormMap();
-			map.put("process_route", "'"+routingFormMap.get("process_route")+"'");
+			map.put("process_route", "'" + oldNo + "'");
 			map.put("site", "'"+site+"'");
 			baseMapper.deleteByNames(map);
 			
-			String data = routingFormMap.getStr("data");
 			JSONObject obj = JSONObject.fromObject(data);
 			JSONObject lines = (JSONObject) obj.get("lines");
 			JSONObject nodes = (JSONObject) obj.get("nodes");
-			if (nodes.size()==0) {
+			if (lines.size()==0 && nodes.size()==1) {
 				int i=0;
 				Set<String> set = nodes.keySet();
 				for (String key : set) {
 					RoutingStepFormMap map2 = new RoutingStepFormMap();
-					map2.put("process_route", routingFormMap.get("process_route"));
+					map2.put("process_route", newNo);
 					map2.put("operation", key);
 					map2.put("next_operation", "");
 					map2.put("state", 0);
@@ -234,6 +273,7 @@ public class RoutingController extends BaseController {
 					baseMapper.addEntity(map2);
 				}
 			}else {
+				if (lines.size()==0) throw new IllegalArgumentException("工艺路线节点未连接");
 				Set<String> set = lines.keySet();
 				JSONObject checkLine = null;
 				int i=0;
@@ -251,7 +291,7 @@ public class RoutingController extends BaseController {
 					
 					//根据to值找from值进行存储
 					RoutingStepFormMap map2 = new RoutingStepFormMap();
-					map2.put("process_route", routingFormMap.get("process_route"));
+					map2.put("process_route", newNo);
 					map2.put("operation", operation);
 					map2.put("next_operation", nextOperation);
 					map2.put("state", 0);
@@ -265,6 +305,7 @@ public class RoutingController extends BaseController {
 			}
 		}catch(Exception e){
 			e.printStackTrace();
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return "error";
 		}
 		return "success";
@@ -273,11 +314,13 @@ public class RoutingController extends BaseController {
 	
 	@ResponseBody
 	@RequestMapping("routing_queryData")
-	@Transactional(readOnly=false)//需要事务操作必须加入此注解
-	@SystemLog(module="车间数据维护",methods="工艺路线维护-修改工艺路线")//凡需要处理业务逻辑的.都需要记录操作日志
-	public String queryData() throws Exception {
-		RoutingFormMap routingFormMap = routingMapper.findbyFrist("process_route", getPara("process_route"), RoutingFormMap.class);
-		JSONObject object = JSONObject.fromObject(routingFormMap);
+	public String queryData(HttpServletResponse response) throws Exception {
+		RoutingFormMap route = currentSiteRoutingByNo(getPara("process_route"));
+		if (route == null) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+			return null;
+		}
+		JSONObject object = JSONObject.fromObject(route);
 		return object.toString();
 	}
 	
@@ -288,14 +331,31 @@ public class RoutingController extends BaseController {
 	public String deleteEntity() throws Exception {
 		try{
 			String[] ids = getParaValues("ids");
+			if (ids == null || ids.length == 0) return ConstantController.ERROR;
+			List<RoutingFormMap> routes = new ArrayList<RoutingFormMap>();
+			JdbcTemplate jdbc = new JdbcTemplate(dataSource);
 			for (String id : ids) {
-				RoutingFormMap routingFormMap = baseMapper.findbyFrist("id", id, RoutingFormMap.class);
-				if (routingFormMap!=null && routingFormMap.size()>0) {
-					baseMapper.deleteByAttribute("process_route", "'"+routingFormMap.getStr("process_route")+"'", RoutingStepFormMap.class);
+				RoutingFormMap route = currentSiteRouting(id);
+				if (route == null) return ConstantController.ERROR;
+				String number = route.getStr("process_route");
+				Integer orders = jdbc.queryForObject("SELECT COUNT(*) FROM ly_shoporder WHERE site=? AND process_route=?",
+						new Object[] { currentSite(), number }, Integer.class);
+				Integer steps = jdbc.queryForObject("SELECT COUNT(*) FROM ly_sfc_step WHERE site=? AND process_route=?",
+						new Object[] { currentSite(), number }, Integer.class);
+				if ((orders != null && orders.intValue() > 0) || (steps != null && steps.intValue() > 0)) {
+					return ConstantController.ERROR;
 				}
-				routingMapper.deleteByAttribute("id", id, RoutingFormMap.class);
+				routes.add(route);
+			}
+			for (RoutingFormMap route : routes) {
+				RoutingStepFormMap condition = new RoutingStepFormMap();
+				condition.put("process_route", "'" + route.getStr("process_route") + "'");
+				condition.put("site", "'" + currentSite() + "'");
+				baseMapper.deleteByNames(condition);
+				routingMapper.deleteByAttribute("id", String.valueOf(route.get("id")), RoutingFormMap.class);
 			}
 		}catch(Exception e){
+			TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 			return "error";
 		}
 		return "success";

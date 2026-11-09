@@ -1,5 +1,6 @@
 package com.iemes.controller.workshop;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -69,6 +70,7 @@ public class OperationResourceController extends BaseController {
 	@SystemLog(module="车间数据维护",methods="资源维护-新增资源")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity() throws Exception {
 		OperationResourceFormMap operationResourceFormMap = getFormMap(OperationResourceFormMap.class);
+		operationResourceFormMap.put("site", currentSite());
 		
 		// 获取request
 		HttpServletRequest request = ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();  
@@ -91,10 +93,20 @@ public class OperationResourceController extends BaseController {
 	@RequestMapping("operation_resource_editUI")
 	public String editUI(Model model) throws Exception {
 		String id = getPara("id");
-		if(Common.isNotEmpty(id)){
-			model.addAttribute("operationResource", baseMapper.findbyFrist("id", id, OperationResourceFormMap.class));
-		}
+		OperationResourceFormMap resource = currentSiteResource(id);
+		if (resource == null) return "redirect:/denied.jsp";
+		model.addAttribute("operationResource", resource);
 		return Common.BACKGROUND_PATH + "/workshopdata/operation_resource/operation_resource_edit";
+	}
+
+	private String currentSite() {
+		return String.valueOf(SecurityUtils.getSubject().getSession().getAttribute("site"));
+	}
+
+	private OperationResourceFormMap currentSiteResource(String id) {
+		if (Common.isEmpty(id) || !id.matches("[0-9]+")) return null;
+		OperationResourceFormMap resource = baseMapper.findbyFrist("id", id, OperationResourceFormMap.class);
+		return resource != null && currentSite().equals(resource.getStr("site")) ? resource : null;
 	}
 	
 	@ResponseBody
@@ -102,8 +114,16 @@ public class OperationResourceController extends BaseController {
 	@Transactional(readOnly=false)//需要事务操作必须加入此注解
 	@SystemLog(module="车间数据维护",methods="资源维护-修改资源")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String editEntity() throws Exception {
-		OperationResourceFormMap operationResourceFormMap = getFormMap(OperationResourceFormMap.class);
-		baseMapper.editEntity(operationResourceFormMap);
+		OperationResourceFormMap submitted = getFormMap(OperationResourceFormMap.class);
+		OperationResourceFormMap existing = currentSiteResource(submitted.getStr("id"));
+		if (existing == null) return "error";
+		OperationResourceFormMap update = new OperationResourceFormMap();
+		update.put("id", existing.get("id"));
+		for (String field : new String[] { "operationResource_no", "operationResource_desc", "operation", "state" }) {
+			if (submitted.containsKey(field)) update.put(field, submitted.get(field));
+		}
+		if (update.size() == 1) return "error";
+		baseMapper.editEntity(update);
 		return "success";
 	}
 	
@@ -113,8 +133,15 @@ public class OperationResourceController extends BaseController {
 	@SystemLog(module="车间数据维护",methods="资源维护-删除资源")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String deleteEntity() throws Exception {
 		String[] ids = getParaValues("ids");
+		if (ids == null || ids.length == 0) return "error";
+		List<OperationResourceFormMap> resources = new ArrayList<OperationResourceFormMap>();
 		for (String id : ids) {
-			baseMapper.deleteByAttribute("id", id, OperationResourceFormMap.class);
+			OperationResourceFormMap resource = currentSiteResource(id);
+			if (resource == null) return "error";
+			resources.add(resource);
+		}
+		for (OperationResourceFormMap resource : resources) {
+			baseMapper.deleteByAttribute("id", String.valueOf(resource.get("id")), OperationResourceFormMap.class);
 		}
 		return "success";
 	}
