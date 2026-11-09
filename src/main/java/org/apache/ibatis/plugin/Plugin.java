@@ -155,7 +155,7 @@ public class Plugin implements InvocationHandler {
 					Object v = formMap.get(string);
 					String sf = v.toString();
 					if (sf.indexOf("%") > -1) {
-						param += " and " + string + " like '" + v + "'";
+						param += " and `" + string + "` like '" + v + "'";
 					} else {
 						if (sf.indexOf(",") > -1)// 处理模糊查询
 						{
@@ -165,16 +165,16 @@ public class Plugin implements InvocationHandler {
 							for (String sst : se) {
 								if (0 >= sbuffer.length()) {
 									sbuffer.append(" and (");
-									sbuffer.append(" " + string + " = '" + sst + "'  ");
+								sbuffer.append(" `" + string + "` = '" + sst + "'  ");
 								} else {
-									sbuffer.append(" or " + string + " = '" + sst + "'  ");
+								sbuffer.append(" or `" + string + "` = '" + sst + "'  ");
 								}
 
 							}
 							sbuffer.append(")");
 							param += sbuffer.toString();
 						} else {
-							param += " and " + string + " = '" + v + "'";
+							param += " and `" + string + "` = '" + v + "'";
 						}
 
 					}
@@ -214,7 +214,7 @@ public class Plugin implements InvocationHandler {
 			String param = "";
 			for (Entry<String, Object> entry : formMap.entrySet()) {
 				if (!"ly_table".equals(entry.getKey()) && null != entry.getValue() && !"_t".equals(entry.getKey()))
-					param += " and " + entry.getKey() + " in (" + entry.getValue() + ")";
+					param += " and `" + entry.getKey() + "` in (" + entry.getValue() + ")";
 			}
 			if (StringUtils.isNotBlank(param)) {
 				param = param.substring(param.indexOf("and") + 4);
@@ -233,9 +233,9 @@ public class Plugin implements InvocationHandler {
 					Object v = formMap.get(string);
 					if (v.toString().indexOf("%") > -1)// 处理模糊查询
 					{
-						param += " and " + string + " like '" + v + "'";
+						param += " and `" + string + "` like '" + v + "'";
 					} else {
-						param += " and " + string + " = '" + v + "'";
+						param += " and `" + string + "` = '" + v + "'";
 					}
 				}
 			}
@@ -265,7 +265,7 @@ public class Plugin implements InvocationHandler {
 			for (String string : fe) {
 				Object v = formMap.get(string);
 				if (null != v) {
-					fieldString += string + ",";
+					fieldString += "`" + string + "`,";
 					fieldValues += "'" + v + "',";
 				}
 			}
@@ -281,9 +281,9 @@ public class Plugin implements InvocationHandler {
 					String key = mapfield.get(Configuration.COLUMN_KEY).toString();
 					if (!StringUtils.isBlank(key)) {
 						if (key.equals(string)) {
-							where = "WHERE " + key + " = '" + v + "'";
+							where = "WHERE `" + key + "` = '" + v + "'";
 						} else {
-							fieldString += string + "='" + v + "',";
+							fieldString += "`" + string + "`='" + v + "',";
 						}
 					} else {
 						throw new NullPointerException("update操作没有找到主键!");

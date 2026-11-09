@@ -43,7 +43,7 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 	 * 		更新ly_shoporder_sfc表的status为：1（生产中）；
 	 * 		更新ly_shoporder表中的status为：1（生产中）。
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public String assemblingStartValadata(FormMap<String, String> formMap) throws Exception {
 		log.info(">>> 进入《开始按钮》校验方法");
 		
@@ -117,7 +117,7 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 	 * 				如果是，修改ly_shoporder表的status为3（已完成）；如果否则不作操作。
 	 * step3、	如果存在，则根据得到的next_operation向ly_sfc_step表插入一条记录，该记录的operation为next_operation的值，status（状态）为0（创建）；
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public String process_finish(FormMap<String, Object> formMap) throws Exception {
 		log.info(">>> 进入《完成按钮》处理方法中");
 		
@@ -229,7 +229,7 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 		return ResponseHelp.responseText2();
 	}
 
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public String fit_out(SfcAssemblyFormMap sfcAssemblyFormMap) throws Exception{
 		String item_sfc = sfcAssemblyFormMap.getStr("item_sfc");
 		String item_no = sfcAssemblyFormMap.getStr("item");
@@ -265,7 +265,7 @@ public class AssemblePodServiceImpl implements AssemblePodService {
 	 * @return
 	 * @throws Exception
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public String recode_nccode(FormMap formMap)throws Exception {
 		String sfc = formMap.getStr("wc_sfc");
 		String operation = formMap.getStr("operation");

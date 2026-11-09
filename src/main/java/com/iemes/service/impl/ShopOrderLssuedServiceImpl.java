@@ -30,7 +30,7 @@ public class ShopOrderLssuedServiceImpl implements ShopOrderLssuedService {
 	/**
 	 * 工单下达
 	 */
-	@Transactional
+	@Transactional(rollbackFor = Exception.class)
 	public void shopOrderLssued(ShopOrderFormMap shopOrderFormMap) throws Exception {
 		log.info(">>> 进入工单下达方法");
 		

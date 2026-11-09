@@ -42,6 +42,8 @@
 
 `ly_teaching_testinfo.function` 在原 MyBatis 动态 SELECT 字段清单中未加引号，导致教学评分列表 HTTP 500。最终修复保留 `ConfigUtils` 缓存中的原始列名供动态筛选匹配，仅在 `Plugin.joinSql` 输出 SELECT 字段与 BATCHSAVE 的 INSERT 字段时加反引号。当前 294 个列名符合简单标识符形式，修复后教学列表筛选结果与数据库一致，28 个表格数据接口返回成功 JSON；评分新增、替换与清空已在临时考试中验证。
 
+2026-11-09 生产终验进一步发现：考试启用时，评分服务按 `function` 查询和写入分数会使工单新增返回错误，但工单已入库。现将动态 `findByNames` / `findByPage` 的字段条件，以及单行新增/修改的字段名也加反引号。隔离库复验工单新增返回 `success`；启用考试并配置“计划工单维护”3 分后，新增返回 `score=3`，`ly_grade_calculate` 写入对应记录。主栈 34 个菜单页和九种报表在部署后回归通过。此改动仅解决关键字列名；旧动态 SQL 的值拼接仍应作为后续安全改造项目。
+
 ## 字面表名与字段片段复核（2026-11-05）
 
 12 个 Mapper XML 共引用 26 个字面表名，只有 `ly_res_roles` 缺表；对应 `deleteResourcesRole`/`addRoleRes` 未见 Java 调用。各 `<sql id="selectId">` 中可直接识别的简单字段均能在相关实际表中找到；`log-mapper.xml` 的 8 个字段均属于 `ly_log`。当前库共 294 列。此静态检查不覆盖运行时动态拼接的所有条件，后者需业务流程验收。

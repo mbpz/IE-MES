@@ -1,6 +1,6 @@
 # 静态功能基线
 
-所有条目状态：待运行验证。路由包括源码中的声明，需进一步排除注释并结合类级路径。
+本文件保留迁移开始时的静态清单；下方“待运行验证”是当时状态，不代表最终结论。运行验收与剩余边界见 [checklist.md](checklist.md) 和 [final-audit.md](final-audit.md)。路由包括源码中的声明，需排除注释并结合类级路径。
 
 ## src/main/java/com/iemes/controller/base/BaseResponse.java
 
