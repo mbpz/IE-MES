@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Collections;
 import java.util.List;
@@ -60,6 +61,7 @@ import com.iemes.mapper.BaseExtMapper;
 import com.iemes.mapper.RoleMapper;
 import com.iemes.mapper.UserMapper;
 import com.iemes.service.UserProvisioningPolicy;
+import com.iemes.util.BomComponentValidator;
 import com.iemes.util.Common;
 import com.iemes.util.PasswordHelper;
 
@@ -629,9 +631,10 @@ public class MessageUploadController extends BaseController {
 					String item_bom_desc = row.getCell(j++).getStringCellValue();
 					String state = row.getCell(j++).getStringCellValue();
 					String item_no = row.getCell(j++).getStringCellValue();
-					int user_number = (int)row.getCell(j++).getNumericCellValue();
-					int balance_up = (int)row.getCell(j++).getNumericCellValue();
-					int balance_down = (int)row.getCell(j++).getNumericCellValue();
+					String use_number = BigDecimal.valueOf(row.getCell(j++).getNumericCellValue()).stripTrailingZeros().toPlainString();
+					String balance_up = BigDecimal.valueOf(row.getCell(j++).getNumericCellValue()).stripTrailingZeros().toPlainString();
+					String balance_down = BigDecimal.valueOf(row.getCell(j++).getNumericCellValue()).stripTrailingZeros().toPlainString();
+					BomComponentValidator.validateRow(item_no, use_number, balance_up, balance_down);
 					state = state.equals("是")?"1":"0";
 
 					BomFormMap bomFormMap = new BomFormMap();
@@ -651,7 +654,7 @@ public class MessageUploadController extends BaseController {
 					itemBomFormMap.put("site", site);
 					List<ItemBomFormMap> tempItemBomList = baseMapper.findByNames(itemBomFormMap);
 					if(CollectionUtils.isEmpty(tempItemBomList)){
-						itemBomFormMap.put("user_number", user_number);
+						itemBomFormMap.put("use_number", use_number);
 						itemBomFormMap.put("balance_up", balance_up);
 						itemBomFormMap.put("balance_down", balance_down);
 						baseMapper.addEntity(itemBomFormMap);

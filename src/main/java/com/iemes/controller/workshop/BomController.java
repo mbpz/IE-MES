@@ -26,6 +26,7 @@ import com.iemes.entity.ItemBomFormMap;
 import com.iemes.entity.UserFormMap;
 import com.iemes.plugin.PageView;
 import com.iemes.score.GradeCalculateService;
+import com.iemes.util.BomComponentValidator;
 import com.iemes.util.Common;
 
 /**
@@ -66,7 +67,7 @@ public class BomController extends BaseController {
 	
 	@ResponseBody
 	@RequestMapping("bom_addEntity")
-//	@Transactional(readOnly=false)//需要事务操作必须加入此注解
+	@Transactional(readOnly=false)
 	@SystemLog(module="生产物料控制",methods="物料维护-新增物料清单")//凡需要处理业务逻辑的.都需要记录操作日志
 	public String addEntity() throws Exception {
 		BomFormMap bomFormMap = getFormMap(BomFormMap.class);
@@ -76,16 +77,24 @@ public class BomController extends BaseController {
 		// 通过工具类获取当前登录的bean
 		UserFormMap userFormMap = (UserFormMap)Common.findUserSession(request);
 		Session session = SecurityUtils.getSubject().getSession();
+		String[] itemNoArr = request.getParameterValues("item_no_1");
+		String[] itemUseNumberArr = request.getParameterValues("item_use_number_1");
+		String[] itemBalanceUpArr = request.getParameterValues("item_balance_up_1");
+		String[] itemBalanceDownArr = request.getParameterValues("item_balance_down_1");
+		try {
+			BomComponentValidator.validate(itemNoArr, itemUseNumberArr, itemBalanceUpArr, itemBalanceDownArr);
+		} catch (IllegalArgumentException invalid) {
+			JSONObject error = new JSONObject();
+			error.put("result", ConstantController.ERROR);
+			error.put("message", invalid.getMessage());
+			return error.toString();
+		}
 		bomFormMap.put("site", session.getAttribute("site"));
 		bomFormMap.put("by_user", userFormMap.getStr("accountName"));
 		baseMapper.addEntity(bomFormMap);
 		
 		// 物料清单子项
 		String itemBomNo = request.getParameter("bomFormMap.item_bom_no");
-		String[] itemNoArr = request.getParameterValues("item_no_1");
-		String[] itemUseNumberArr = request.getParameterValues("item_use_number_1");
-		String[] itemBalanceUpArr = request.getParameterValues("item_balance_up_1");
-		String[] itemBalanceDownArr = request.getParameterValues("item_balance_down_1");
 		if(null != itemNoArr ){
 			for(int i = 0 ;i<itemNoArr.length;i++){
 				ItemBomFormMap itemBomFormMap = new ItemBomFormMap();
@@ -148,9 +157,11 @@ public class BomController extends BaseController {
 		String[] itemUseNumberArr = request.getParameterValues("item_use_number_1");
 		String[] itemBalanceUpArr = request.getParameterValues("item_balance_up_1");
 		String[] itemBalanceDownArr = request.getParameterValues("item_balance_down_1");
-		if (itemNoArr != null && (itemUseNumberArr == null || itemBalanceUpArr == null || itemBalanceDownArr == null
-				|| itemNoArr.length != itemUseNumberArr.length || itemNoArr.length != itemBalanceUpArr.length
-				|| itemNoArr.length != itemBalanceDownArr.length)) return "error";
+		try {
+			BomComponentValidator.validate(itemNoArr, itemUseNumberArr, itemBalanceUpArr, itemBalanceDownArr);
+		} catch (IllegalArgumentException invalid) {
+			return "error";
+		}
 		BomFormMap update = new BomFormMap();
 		update.put("id", existing.get("id"));
 		for (String field : new String[] { "item_bom_name", "item_bom_desc", "state" }) {
